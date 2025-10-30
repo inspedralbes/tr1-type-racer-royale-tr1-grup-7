@@ -1,0 +1,26 @@
+{
+  "name": "projecte-joc-backend-local",
+  "version": "1.0.0",
+  "description": "Servidor local per al joc de tecleig",
+  "main": "servidor.js",
+  "type": "module",
+  "scripts": {
+    "start": "node servidor.js",
+    "dev": "nodemon servidor.js"
+  },
+  "keywords": [
+    "socket.io",
+    "vue",
+    "node"
+  ],
+  "author": "El Teu Nom",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
+
