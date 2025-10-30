@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  
+  db:
+    image: mariadb:10.6
+    container_name: grup7_db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: 'admin_grup7' # Contraseña del usuario root
+      MARIADB_DATABASE: 'grup7'
+      MARIADB_USER: 'grup7_user'
+      MARIADB_PASSWORD: 'grup7'
+    volumes:
+      - ./docker_data/db:/var/lib/mysql # Persistencia de datos BBDD
+    networks:
+      - grup7_net
+
+  web:
+    image: php:8.2-apache
+    container_name: grup7_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html # Código fuente del proyecto
+    depends_on:
+      - db
+    networks:
+      - grup7_net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: grup7_pma
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Acceso a phpMyAdmin: http://localhost:8080
+    environment:
+      PMA_HOST: 'db'
+      PMA_PORT: 3306
+      PMA_USER: 'root'
+      PMA_PASSWORD: 'admin_grup7' # Debe coincidir con MARIADB_ROOT_PASSWORD
+    depends_on:
+      - db
+    networks:
+      - grup7_net
+
+networks:
+  grup7_net:
+    driver: bridge

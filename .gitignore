@@ -1,0 +1,12 @@
+# Archivo .gitignore
+
+# Datos de la BBDD local
+/docker_data/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Dependencias (si usas composer o npm)
+/vendor/
+/node_modules/
