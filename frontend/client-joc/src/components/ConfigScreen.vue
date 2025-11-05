@@ -2,8 +2,10 @@
 import { defineEmits, ref } from 'vue';
 import { nombreUsuario, idioma, modoOscuro, volumenSonido, guardarConfiguracion, t } from '../services/configStore.js';
 import Notificacion from './Notificacion.vue';
+import NavButtons from './NavButtons.vue';
+import audioManager from '../services/audioManager.js';
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'home']);
 
 const idiomas = [
   { value: 'es', label: 'Español' },
@@ -15,6 +17,7 @@ const mostrarNotificacion = ref(false);
 const mensajeNotificacion = ref('');
 
 function guardarYCerrar() {
+  audioManager.playButtonClick();
   guardarConfiguracion();
   mensajeNotificacion.value = t('configGuardada');
   mostrarNotificacion.value = true;
@@ -24,10 +27,23 @@ function guardarYCerrar() {
     mostrarNotificacion.value = false;
   }, 3100);
 }
+
+function handleClose() {
+  audioManager.playButtonClick();
+  emit('close');
+}
 </script>
 
 <template>
   <div class="config-container" :class="{ 'modo-oscuro': modoOscuro }">
+    <NavButtons 
+      :mostrar-volver="true"
+      :mostrar-home="true"
+      :mostrar-config="false"
+      @back="emit('close')"
+      @home="emit('home')"
+    />
+    
     <Notificacion 
       v-if="mostrarNotificacion" 
       :mensaje="mensajeNotificacion" 
@@ -95,10 +111,10 @@ function guardarYCerrar() {
 
       <div class="config-botones">
         <button @click="guardarYCerrar" class="btn-guardar">
-          💾 {{ t('guardar') }}
+          {{ t('guardar') }}
         </button>
-        <button @click="emit('close')" class="btn-volver">
-          ← {{ t('volver') }}
+        <button @click="handleClose" class="btn-volver">
+          {{ t('volver') }}
         </button>
       </div>
     </div>

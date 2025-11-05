@@ -4,7 +4,12 @@ import GameEngine from './components/GameEngine.vue';
 import ChatScreen from './components/ChatScreen.vue';
 import ConfigScreen from './components/ConfigScreen.vue';
 import ModosScreen from './components/ModosScreen.vue';
+import SalaScreen from './components/SalaScreen.vue';
+import JuegoSolitario from './components/JuegoSolitario.vue';
 import communicationManager from './services/communicationManager.js';
+import audioManager from './services/audioManager.js';
+
+const modoSeleccionado = ref('');
 
 const vistaActual = ref('chat'); // Cambiado para mostrar chat primero
 const nomJugador = ref('');
@@ -37,6 +42,17 @@ function connectarAlServidor() {
 }
 
 onMounted(() => {
+  // Iniciar música lofi de fondo
+  audioManager.init();
+  
+  // Iniciar música al primer clic del usuario
+  const startMusic = () => {
+    audioManager.resume();
+    audioManager.startLofiMusic();
+    document.removeEventListener('click', startMusic);
+  };
+  document.addEventListener('click', startMusic);
+  
   // Escoltem la llista de jugadors
   communicationManager.onUpdatePlayerList((llistaDeJugadors) => {
     jugadors.value = llistaDeJugadors;
@@ -56,23 +72,47 @@ onMounted(() => {
 
 <template>
   <main class="app-container">
-    <Transition name="fade" mode="out-in">
       
       <!-- VISTA 0: CHAT SCREEN -->
       <div v-if="vistaActual === 'chat'" key="chat">
-        <ChatScreen @comenzar="vistaActual = 'modos'" />
+        <ChatScreen 
+          @comenzar="vistaActual = 'modos'" 
+          @config="vistaActual = 'config'"
+        />
       </div>
 
       <!-- VISTA 0.5: SELECCIÓN DE MODO -->
       <div v-else-if="vistaActual === 'modos'" key="modos">
         <ModosScreen 
-          @selectMode="(modo) => { console.log('Modo seleccionado:', modo); vistaActual = 'salaEspera'; }"
+          @selectMode="(modo) => { modoSeleccionado = modo; vistaActual = modo === 'solo' ? 'juegoSolitario' : 'sala'; }"
           @back="vistaActual = 'chat'"
+          @home="vistaActual = 'chat'"
+          @config="vistaActual = 'config'"
+        />
+      </div>
+
+      <!-- VISTA 0.75: SALA DE ESPERA -->
+      <div v-else-if="vistaActual === 'sala'" key="sala">
+        <SalaScreen 
+          :modo="modoSeleccionado"
+          @back="vistaActual = 'modos'"
+          @home="vistaActual = 'chat'"
+          @config="vistaActual = 'config'"
+          @jugar="vistaActual = 'juegoSolitario'"
+        />
+      </div>
+
+      <!-- VISTA 0.8: JUEGO SOLITARIO -->
+      <div v-else-if="vistaActual === 'juegoSolitario'" key="juegoSolitario">
+        <JuegoSolitario 
+          @back="vistaActual = 'modos'"
+          @home="vistaActual = 'chat'"
+          @config="vistaActual = 'config'"
         />
       </div>
 
       <!-- VISTA 1: SALA D'ESPERA -->
-      <div v-else-if="vistaActual === 'salaEspera'" class="vista-container" key="sala">
+      <div v-else-if="vistaActual === 'salaEspera'" class="vista-container" key="salaEspera">
         <h2 class="vista-title">Benvingut a la Sala d'Espera</h2>
         
         <div class="form-grup">
@@ -150,29 +190,15 @@ onMounted(() => {
 
       <!-- VISTA 4: CONFIGURACIÓN -->
       <div v-else-if="vistaActual === 'config'" key="config">
-        <ConfigScreen @close="vistaActual = 'chat'" />
+        <ConfigScreen 
+          @close="vistaActual = 'chat'" 
+          @home="vistaActual = 'chat'"
+        />
       </div>
-      
-    </Transition>
-
-    <!-- Botón de configuración -->
-    <button @click="vistaActual = 'config'" class="btn-config" title="Configuración">
-      ⚙️
-    </button>
   </main>
 </template>
 
 <style scoped>
-/* Transició de fosa entre vistes */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* Contenidor principal */
 .app-container {
   width: 100%;
@@ -394,34 +420,6 @@ onMounted(() => {
   font-style: italic;
   color: #42b883;
   font-weight: 600;
-}
-
-/* Botón de configuración */
-.btn-config {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 60px;
-  height: 60px;
-  font-size: 2rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  margin: 0;
-}
-
-.btn-config:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: rotate(90deg) scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 </style>
 

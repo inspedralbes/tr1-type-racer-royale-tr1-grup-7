@@ -1,8 +1,10 @@
 <script setup>
 import { defineEmits } from 'vue';
 import { nombreUsuario, modoOscuro, t } from '../services/configStore.js';
+import NavButtons from './NavButtons.vue';
+import audioManager from '../services/audioManager.js';
 
-const emit = defineEmits(['selectMode']);
+const emit = defineEmits(['selectMode', 'back', 'home', 'config']);
 
 const modosTraducciones = {
   es: {
@@ -39,12 +41,22 @@ function getTexto(key) {
 }
 
 function seleccionarModo(modo) {
+  audioManager.playButtonClick();
   emit('selectMode', modo);
 }
 </script>
 
 <template>
   <div class="modos-container" :class="{ 'modo-oscuro': modoOscuro }">
+    <NavButtons 
+      :mostrar-volver="true"
+      :mostrar-home="true"
+      :mostrar-config="true"
+      @back="emit('back')"
+      @home="emit('home')"
+      @config="emit('config')"
+    />
+    
     <div class="modos-content">
       <h1 class="modos-titulo">{{ getTexto('bienvenido') }} {{ nombreUsuario || 'Jugador' }}</h1>
       <h2 class="modos-subtitulo">{{ getTexto('modoDeJuego') }}</h2>
@@ -62,12 +74,6 @@ function seleccionarModo(modo) {
           <div class="modo-icono">👥</div>
           <h3 class="modo-nombre">{{ getTexto('modoMulti') }}</h3>
           <p class="modo-descripcion">{{ getTexto('multijugador') }}</p>
-        </button>
-      </div>
-
-      <div class="modos-footer">
-        <button @click="$emit('back')" class="btn-atras">
-          ← {{ t('volver') }}
         </button>
       </div>
     </div>
@@ -290,44 +296,6 @@ function seleccionarModo(modo) {
 .modo-oscuro .modo-descripcion {
   color: #bbb;
   background: rgba(255, 255, 255, 0.1);
-}
-
-.modos-footer {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.btn-atras {
-  padding: 1rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 25px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.1rem;
-}
-
-.btn-atras:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modo-oscuro .btn-atras {
-  background: rgba(30, 30, 30, 0.5);
-  border-color: rgba(240, 147, 251, 0.3);
-}
-
-.modo-oscuro .btn-atras:hover {
-  background: rgba(40, 40, 40, 0.7);
-  border-color: rgba(240, 147, 251, 0.5);
 }
 
 /* Responsive */

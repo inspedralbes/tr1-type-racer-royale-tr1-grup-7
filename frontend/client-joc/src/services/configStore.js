@@ -21,7 +21,19 @@ export const traducciones = {
     guardar: 'GUARDAR',
     volver: 'VOLVER',
     configGuardada: 'Configuración guardada correctamente',
-    ingreseNombre: 'Por favor, ingrese su nombre primero'
+    ingreseNombre: 'Por favor, ingrese su nombre primero',
+    progreso: 'Progreso',
+    tiempo: 'Tiempo',
+    errores: 'Errores',
+    siguienteTecla: 'Siguiente tecla',
+    iniciar: 'Iniciar',
+    detener: 'Detener',
+    reiniciar: 'Reiniciar',
+    juegoTerminado: '¡Juego Terminado!',
+    tiempoTotal: 'Tiempo total',
+    precision: 'Precisión',
+    palabrasPorMinuto: 'Palabras por minuto',
+    nuevoJuego: 'Nuevo Juego'
   },
   ca: {
     teclazo: 'TECLAZO',
@@ -36,7 +48,19 @@ export const traducciones = {
     guardar: 'GUARDAR',
     volver: 'TORNAR',
     configGuardada: 'Configuració guardada correctament',
-    ingreseNombre: 'Si us plau, introdueix el teu nom primer'
+    ingreseNombre: 'Si us plau, introdueix el teu nom primer',
+    progreso: 'Progrés',
+    tiempo: 'Temps',
+    errores: 'Errors',
+    siguienteTecla: 'Següent tecla',
+    iniciar: 'Iniciar',
+    detener: 'Aturar',
+    reiniciar: 'Reiniciar',
+    juegoTerminado: 'Joc Acabat!',
+    tiempoTotal: 'Temps total',
+    precision: 'Precisió',
+    palabrasPorMinuto: 'Paraules per minut',
+    nuevoJuego: 'Nou Joc'
   },
   en: {
     teclazo: 'TECLAZO',
@@ -51,7 +75,19 @@ export const traducciones = {
     guardar: 'SAVE',
     volver: 'BACK',
     configGuardada: 'Settings saved successfully',
-    ingreseNombre: 'Please enter your name first'
+    ingreseNombre: 'Please enter your name first',
+    progreso: 'Progress',
+    tiempo: 'Time',
+    errores: 'Errors',
+    siguienteTecla: 'Next key',
+    iniciar: 'Start',
+    detener: 'Stop',
+    reiniciar: 'Restart',
+    juegoTerminado: 'Game Over!',
+    tiempoTotal: 'Total time',
+    precision: 'Accuracy',
+    palabrasPorMinuto: 'Words per minute',
+    nuevoJuego: 'New Game'
   }
 };
 

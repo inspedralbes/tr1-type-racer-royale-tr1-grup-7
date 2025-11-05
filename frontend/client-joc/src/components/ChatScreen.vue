@@ -1,20 +1,30 @@
 <script setup>
 import { defineEmits } from 'vue';
 import { nombreUsuario, modoOscuro, t } from '../services/configStore.js';
+import NavButtons from './NavButtons.vue';
+import audioManager from '../services/audioManager.js';
 
-const emit = defineEmits(['comenzar']);
+const emit = defineEmits(['comenzar', 'config']);
 
 function comenzar() {
   if (nombreUsuario.value.trim() === '') {
     alert(t('ingreseNombre'));
     return;
   }
+  audioManager.playButtonClick();
   emit('comenzar');
 }
 </script>
 
 <template>
   <div class="chat-container" :class="{ 'modo-oscuro': modoOscuro }">
+    <NavButtons 
+      :mostrar-volver="false"
+      :mostrar-home="false"
+      :mostrar-config="true"
+      @config="emit('config')"
+    />
+    
     <h1 class="titulo-principal">{{ t('teclazo') }}</h1>
 
     <div class="form-container">
