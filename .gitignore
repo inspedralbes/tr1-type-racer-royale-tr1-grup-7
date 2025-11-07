@@ -18,3 +18,6 @@ frontend/client-joc/dist/
 # Archivos de entorno
 .env
 .env.local
+
+# Ignorar repo externo importado
+Juego-teclado/
