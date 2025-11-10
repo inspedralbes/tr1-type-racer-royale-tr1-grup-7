@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import GameEngine from './components/GameEngine.vue';
+import GameEngineWords from './components/GameEngineWords.vue';
 import GameView from './components/GameView.vue';
 import RoomList from './components/RoomList.vue';
 import CreateRoom from './components/CreateRoom.vue';
@@ -24,6 +25,7 @@ const activeRooms = ref([]); // Salas reales del servidor
 const currentRoomConfig = ref(null); // Configuración de la sala actual
 const isRoomAdmin = ref(false); // Si el usuario es admin de la sala
 const gameText = ref(null); // Texto sincronizado del servidor
+const gameWords = ref([]); // Palabras sincronizadas del servidor
 
 // Estado de los diálogos
 const showPasswordDialog = ref(false);
@@ -303,6 +305,7 @@ onMounted(() => {
     console.log('🎮 El juego ha comenzado!', data);
     console.log('🎮 roomConfig recibido:', data.roomConfig);
     console.log('🎮 gameText recibido:', data.gameText?.substring(0, 50) + '...');
+    console.log('🎮 gameWords recibidos:', data.gameWords?.length, 'palabras');
     
     // Actualizar la configuración si viene del servidor
     if (data.roomConfig) {
@@ -312,6 +315,12 @@ onMounted(() => {
     // Guardar el texto sincronizado
     if (data.gameText) {
       gameText.value = data.gameText;
+    }
+    
+    // Guardar las palabras sincronizadas
+    if (data.gameWords) {
+      gameWords.value = data.gameWords;
+      console.log('✅ Palabras guardadas:', gameWords.value.slice(0, 5), '...');
     }
     
     vistaActual.value = 'joc';
@@ -396,14 +405,27 @@ onMounted(() => {
       />
 
       <!-- VISTA 5: JOC -->
+      <!-- Modo de texto: GameView -->
       <GameView 
-        v-else-if="vistaActual === 'joc'"
+        v-if="vistaActual === 'joc' && modoJuego === 'texto'"
         :players="jugadors"
         :tematica="currentRoomConfig?.theme || 'aleatori'"
         :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
         :gameText="gameText"
         @back-to-lobby="vistaActual = 'lobby'"
-        key="joc"
+        key="joc-texto"
+      />
+
+      <!-- Modo de palabras: GameEngineWords -->
+      <GameEngineWords 
+        v-else-if="vistaActual === 'joc' && modoJuego === 'palabras'"
+        :players="jugadors"
+        :tematica="currentRoomConfig?.theme || 'aleatori'"
+        :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
+        :gameText="gameText"
+        :gameWords="gameWords"
+        @back-to-lobby="vistaActual = 'lobby'"
+        key="joc-palabras"
       />
       
     

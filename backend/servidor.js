@@ -54,6 +54,28 @@ function generarTexto(tematica = 'aleatori', numFrases = 6) {
   return frasesSeleccionadas.join(' ');
 }
 
+// --- GENERADOR DE PALABRAS PARA MODO PALABRAS ---
+const WORD_BANK = [
+  'javascript', 'python', 'typescript', 'react', 'vue', 'angular', 'node',
+  'express', 'database', 'server', 'client', 'frontend', 'backend', 'fullstack',
+  'component', 'function', 'variable', 'constant', 'array', 'object', 'string',
+  'number', 'boolean', 'async', 'await', 'promise', 'callback', 'event',
+  'handler', 'method', 'class', 'interface', 'type', 'generic', 'module',
+  'import', 'export', 'default', 'return', 'void', 'null', 'undefined',
+  'algorithm', 'structure', 'pattern', 'design', 'architecture', 'framework',
+  'library', 'package', 'dependency', 'version', 'deploy', 'build', 'compile',
+  'debug', 'console', 'terminal', 'command', 'script', 'syntax', 'semantic'
+];
+
+function generarPalabras(numPalabras = 100) {
+  const palabras = [];
+  for (let i = 0; i < numPalabras; i++) {
+    const randomIndex = Math.floor(Math.random() * WORD_BANK.length);
+    palabras.push(WORD_BANK[randomIndex]);
+  }
+  return palabras;
+}
+
 // --- FUNCIONES AUXILIARES ---
 
 // Envía la lista de salas actualizada a todos los clientes
@@ -282,16 +304,27 @@ io.on('connection', (socket) => {
       if (room && room.admin === socket.id) {
         console.log(`🎮 Admin ${player.name} está iniciando el juego en la sala "${player.room}"`);
         
-        // Generar el texto para todos basado en la temática
-        const theme = room.config?.theme || 'aleatori';
-        const gameText = generarTexto(theme, 6);
+        // Generar contenido según el modo de juego
+        const gameMode = room.config?.gameMode || 'texto';
+        let gameText = null;
+        let gameWords = null;
         
-        console.log(`📝 Texto generado para la sala "${player.room}":`, gameText.substring(0, 50) + '...');
+        if (gameMode === 'palabras') {
+          // Modo palabras: generar lista de palabras
+          gameWords = generarPalabras(100);
+          console.log(`🎯 Palabras generadas para la sala "${player.room}":`, gameWords.slice(0, 10).join(', ') + '...');
+        } else {
+          // Modo texto: generar texto
+          const theme = room.config?.theme || 'aleatori';
+          gameText = generarTexto(theme, 6);
+          console.log(`📝 Texto generado para la sala "${player.room}":`, gameText.substring(0, 50) + '...');
+        }
         
-        // Emitir evento a todos los jugadores de la sala con el mismo texto
+        // Emitir evento a todos los jugadores de la sala con el mismo contenido
         io.to(player.room).emit('gameStarted', {
           roomConfig: room.config,
-          gameText: gameText // NUEVO: El mismo texto para todos
+          gameText: gameText,
+          gameWords: gameWords
         });
       }
     }
@@ -305,6 +338,7 @@ io.on('connection', (socket) => {
         playerId: socket.id,
         playerName: player.name,
         progress: data.progress,
+        wordsCompleted: data.wordsCompleted,
         wpm: data.wpm,
         errors: data.errors
       });
