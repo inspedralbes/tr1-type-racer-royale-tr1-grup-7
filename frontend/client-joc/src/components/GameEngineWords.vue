@@ -696,6 +696,10 @@ const props = defineProps({
     type: Array,
     default: null,
   },
+  isRoomAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Estado del juego
@@ -713,6 +717,7 @@ const wordList = ref([]);
 const showCountdown = ref(true);
 const countdownNumber = ref(5);
 const showContent = ref(false);
+const gameFinished = ref(false);
 let countdownTimer = null;
 let gameTimer = null;
 const gameStartTime = ref(null);
@@ -860,10 +865,29 @@ const startGameTimer = () => {
       timeRemaining.value--;
     } else {
       clearInterval(gameTimer);
-      // Aquí podrías emitir evento de fin de juego
       console.log("⏱️ Tiempo terminado!");
+      finishGame();
     }
   }, 1000);
+};
+
+// Finalizar el juego y mostrar resultados
+const finishGame = () => {
+  gameFinished.value = true;
+  showContent.value = false;
+  
+  // Emitir progreso final
+  emitProgress();
+  
+  console.log("🏁 Juego finalizado!");
+  console.log("📊 Resultados finales:", {
+    jugadores: playersState.value,
+    miProgreso: {
+      palabras: wordsCompleted.value,
+      errores: errors.value,
+      wpm: calculateWPM()
+    }
+  });
 };
 
 // Actualizar estados por carácter a partir del texto tipeado
@@ -1287,6 +1311,65 @@ const getPlayerColor = (index) => {
   const colors = ["#F021B9", "#00F0FF", "#39FF14", "#FF0000", "#FFD700"];
   return colors[index % colors.length];
 };
+
+// Obtener el ganador (jugador con más palabras correctas)
+const getWinner = () => {
+  if (playersState.value.length === 0) return null;
+  
+  const winner = [...playersState.value].sort((a, b) => {
+    // Ordenar por palabras completadas (descendente)
+    if (b.wordsCompleted !== a.wordsCompleted) {
+      return b.wordsCompleted - a.wordsCompleted;
+    }
+    // En caso de empate, ordenar por menos errores
+    return a.errors - b.errors;
+  })[0];
+  
+  return winner;
+};
+
+// Obtener resultados finales ordenados
+const getFinalResults = () => {
+  return [...playersState.value].sort((a, b) => {
+    // Ordenar por palabras completadas (descendente)
+    if (b.wordsCompleted !== a.wordsCompleted) {
+      return b.wordsCompleted - a.wordsCompleted;
+    }
+    // En caso de empate, ordenar por menos errores
+    return a.errors - b.errors;
+  });
+};
+
+// Reiniciar el juego
+const restartGame = () => {
+  gameFinished.value = false;
+  showContent.value = false;
+  showCountdown.value = false;
+  
+  // Resetear estadísticas
+  errors.value = 0;
+  totalErrors.value = 0;
+  wordsCompleted.value = 0;
+  currentStreak.value = 0;
+  
+  // Reinicializar el juego
+  initializeGame();
+  
+  // Reiniciar countdown
+  startCountdown();
+  
+  console.log("🔄 Juego reiniciado");
+};
+
+// Salir al lobby
+const exitToLobby = () => {
+  emit('back-to-lobby');
+};
+
+// Verificar si el usuario actual es el admin/creador de la sala
+const isRoomCreator = computed(() => {
+  return props.isRoomAdmin;
+});
 </script>
 
 <template>
@@ -1529,8 +1612,81 @@ const getPlayerColor = (index) => {
       </div>
     </div>
 
+    <!-- Pantalla de Resultados Finales -->
+    <div v-if="gameFinished" class="results-overlay">
+      <div class="results-container">
+        <!-- Título y Ganador -->
+        <div class="results-header">
+          <div class="results-title">🏆 FINAL DEL JUEGO 🏆</div>
+          <div class="winner-section" v-if="getWinner()">
+            <div class="winner-label">GANADOR</div>
+            <div class="winner-name">{{ getWinner().name }}</div>
+            <div class="winner-stats">
+              {{ getWinner().wordsCompleted }} paraules correctes
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Resultados -->
+        <div class="results-table">
+          <div class="table-header">
+            <div class="header-pos">Pos</div>
+            <div class="header-name">Jugador</div>
+            <div class="header-words">Paraules</div>
+            <div class="header-errors">Errors</div>
+            <div class="header-wpm">WPM</div>
+          </div>
+          
+          <div class="table-body">
+            <div 
+              v-for="(player, index) in getFinalResults()" 
+              :key="player.id" 
+              class="result-row"
+              :class="{ 'winner-row': index === 0 }"
+            >
+              <div class="pos-cell">
+                <span class="position-number">{{ index + 1 }}</span>
+                <span v-if="index === 0" class="trophy-icon">👑</span>
+              </div>
+              <div class="name-cell">
+                <div 
+                  class="player-avatar-small"
+                  :style="{ backgroundColor: getPlayerColor(index) }"
+                >
+                  {{ player.name.charAt(0).toUpperCase() }}
+                </div>
+                <span class="player-name-text">{{ player.name }}</span>
+              </div>
+              <div class="words-cell">{{ player.wordsCompleted || 0 }}</div>
+              <div class="errors-cell">{{ player.errors || 0 }}</div>
+              <div class="wpm-cell">{{ player.wpm || 0 }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="results-actions">
+          <button 
+            v-if="isRoomCreator" 
+            @click="restartGame()" 
+            class="btn-restart"
+          >
+            🔄 VOLVER A JUGAR
+          </button>
+          <button @click="exitToLobby()" class="btn-exit">
+            🚪 SALIR AL LOBBY
+          </button>
+        </div>
+
+        <!-- Mensaje informativo para jugadores que no son creadores -->
+        <div v-if="!isRoomCreator" class="creator-only-message">
+          <p>Solo el creador de la sala puede reiniciar el juego</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Botón flotante para volver al lobby -->
-    <button @click="emit('back-to-lobby')" class="btn-back">← Lobby</button>
+    <button @click="emit('back-to-lobby')" class="btn-back" v-if="!gameFinished">← Lobby</button>
   </div>
 </template>
 
@@ -1702,13 +1858,9 @@ const getPlayerColor = (index) => {
 }
 
 .game-view {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  position: relative;
+  min-height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   background: #0a192f;
@@ -1721,9 +1873,9 @@ const getPlayerColor = (index) => {
   );
   color: #e0e0e0;
   overflow: hidden;
-  padding: 1vh 1vw;
+  padding: 1rem;
   box-sizing: border-box;
-  gap: 1vh;
+  gap: 1rem;
   font-family: "Share Tech Mono", monospace;
 }
 
@@ -1733,28 +1885,28 @@ const getPlayerColor = (index) => {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  gap: 2vw;
+  gap: 2rem;
   background: #1a2a4a;
   backdrop-filter: blur(10px);
-  padding: 1.5vh 2vw;
-  border-radius: 1vw;
-  border: 0.2vw solid #00f0ff;
-  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.3),
-    inset 0 0 1vw rgba(0, 240, 255, 0.05);
-  height: 10vh;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
+    inset 0 0 10px rgba(0, 240, 255, 0.05);
+  min-height: 80px;
 }
 
 .time-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5vh;
+  gap: 0.5rem;
   flex: 1;
-  max-width: 20%;
+  min-width: 120px;
 }
 
 .time-label {
-  font-size: clamp(0.7rem, 1.2vw, 1rem);
+  font-size: 0.9rem;
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1762,10 +1914,10 @@ const getPlayerColor = (index) => {
 }
 
 .time-value {
-  font-size: clamp(1.2rem, 2.5vw, 2rem);
+  font-size: 1.8rem;
   font-weight: 700;
   color: #f021b9;
-  text-shadow: 0 0 1vw #f021b9, 0 0 2vw #f021b9;
+  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
   font-family: "Fira Code", monospace;
 }
 
@@ -1773,12 +1925,12 @@ const getPlayerColor = (index) => {
   flex: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.5vh;
+  gap: 0.5rem;
   align-items: center;
 }
 
 .words-label {
-  font-size: clamp(0.7rem, 1.2vw, 1rem);
+  font-size: 0.9rem;
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1786,10 +1938,10 @@ const getPlayerColor = (index) => {
 }
 
 .words-value {
-  font-size: clamp(1.2rem, 2.5vw, 2rem);
+  font-size: 1.8rem;
   font-weight: 700;
   color: #39ff14;
-  text-shadow: 0 0 1vw #39ff14, 0 0 2vw #39ff14;
+  text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
   font-family: "Fira Code", monospace;
 }
 
@@ -1797,13 +1949,13 @@ const getPlayerColor = (index) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5vh;
+  gap: 0.5rem;
   flex: 1;
-  max-width: 20%;
+  min-width: 120px;
 }
 
 .errors-label {
-  font-size: clamp(0.7rem, 1.2vw, 1rem);
+  font-size: 0.9rem;
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1811,10 +1963,10 @@ const getPlayerColor = (index) => {
 }
 
 .errors-value {
-  font-size: clamp(1.2rem, 2.5vw, 2rem);
+  font-size: 1.8rem;
   font-weight: 700;
   color: #ff0000;
-  text-shadow: 0 0 1vw #ff0000, 0 0 2vw #ff0000;
+  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
   font-family: "Fira Code", monospace;
 }
 
@@ -1830,58 +1982,59 @@ const getPlayerColor = (index) => {
 .game-content-wrapper {
   display: flex;
   width: 100%;
-  gap: 2vw;
+  gap: 2rem;
   align-items: stretch;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* === PANEL DE JUGADORES === */
 .players-panel {
-  flex: 0 0 25vw;
+  flex: 0 0 350px;
   min-width: 300px;
   max-width: 400px;
   background: rgba(26, 42, 74, 0.85);
   backdrop-filter: blur(15px);
-  border: 0.3vw solid #39ff14;
-  border-radius: 2vw;
-  padding: 2vh 1.5vw;
+  border: 3px solid #39ff14;
+  border-radius: 20px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 2vh;
-  box-shadow: 0 0 3vw rgba(57, 255, 20, 0.5),
-    inset 0 0 2vw rgba(57, 255, 20, 0.1);
+  gap: 1.5rem;
+  box-shadow: 0 0 30px rgba(57, 255, 20, 0.5),
+    inset 0 0 20px rgba(57, 255, 20, 0.1);
   overflow: hidden;
 }
 
 .panel-title {
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-size: 1.4rem;
   font-weight: 800;
   color: #39ff14;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   margin: 0;
-  text-shadow: 0 0 2vw #39ff14, 0 0 3vw #39ff14;
+  text-shadow: 0 0 20px #39ff14, 0 0 30px #39ff14;
   font-family: "Share Tech Mono", monospace;
-  padding-bottom: 1vh;
-  border-bottom: 0.2vw solid rgba(57, 255, 20, 0.3);
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(57, 255, 20, 0.3);
 }
 
 .player-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5vh;
+  gap: 1rem;
   overflow-y: auto;
   flex: 1;
 }
 
 .player-card {
   background: rgba(10, 25, 47, 0.7);
-  border: 0.2vw solid rgba(57, 255, 20, 0.4);
-  border-radius: 1.5vw;
-  padding: 2vh 1.5vw;
+  border: 2px solid rgba(57, 255, 20, 0.4);
+  border-radius: 15px;
+  padding: 1.2rem 1rem;
   transition: all 0.3s ease;
-  box-shadow: 0 0 1.5vw rgba(57, 255, 20, 0.2);
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
 }
 
 .player-card.is-typing {
@@ -1902,23 +2055,23 @@ const getPlayerColor = (index) => {
 .player-header {
   display: flex;
   align-items: center;
-  gap: 1.5vw;
-  margin-bottom: 1.5vh;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .player-avatar {
-  width: clamp(50px, 4vw, 70px);
-  height: clamp(50px, 4vw, 70px);
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-size: 1.4rem;
   font-weight: 800;
   color: #ffffff;
-  text-shadow: 0 0 1vw rgba(0, 0, 0, 0.8);
-  border: 0.3vw solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 2vw rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   font-family: "Fira Code", monospace;
 }
 
@@ -1927,37 +2080,37 @@ const getPlayerColor = (index) => {
 }
 
 .player-name {
-  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  font-size: 1.1rem;
   font-weight: 700;
   color: #00f0ff;
-  text-shadow: 0 0 1vw #00f0ff;
+  text-shadow: 0 0 10px #00f0ff;
   display: flex;
   align-items: center;
-  gap: 1vw;
-  margin-bottom: 0.8vh;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
   font-family: "Fira Code", monospace;
 }
 
 .player-streak-icon {
   display: flex;
   align-items: center;
-  gap: 0.5vw;
-  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  gap: 0.4rem;
+  font-size: 1rem;
   animation: flameFlicker 1s ease-in-out infinite alternate;
 }
 
 .streak-number {
-  font-size: clamp(0.8rem, 1.3vw, 0.9rem);
+  font-size: 0.85rem;
   font-weight: 800;
   color: #ffd700;
-  text-shadow: 0 0 0.8vw #ff6600;
+  text-shadow: 0 0 8px #ff6600;
 }
 
 .player-stats {
-  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  font-size: 1rem;
   color: #39ff14;
   font-weight: 600;
-  text-shadow: 0 0 0.8vw rgba(57, 255, 20, 0.6);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
   font-family: "Share Tech Mono", monospace;
 }
 
@@ -1965,20 +2118,20 @@ const getPlayerColor = (index) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-size: 0.9rem;
   font-family: "Share Tech Mono", monospace;
 }
 
 .player-words {
   color: #00f0ff;
   font-weight: 600;
-  text-shadow: 0 0 0.8vw rgba(0, 240, 255, 0.6);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
 }
 
 .player-errors {
   color: #ff6666;
   font-weight: 600;
-  text-shadow: 0 0 0.8vw rgba(255, 102, 102, 0.6);
+  text-shadow: 0 0 8px rgba(255, 102, 102, 0.6);
 }
 
 /* === ÁREA DE TEXTO PRINCIPAL === */
@@ -1986,7 +2139,7 @@ const getPlayerColor = (index) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3vh;
+  gap: 2rem;
   align-items: center;
   justify-content: center;
   min-height: 0;
@@ -1995,31 +2148,31 @@ const getPlayerColor = (index) => {
 .word-display {
   background: rgba(26, 42, 74, 0.85);
   backdrop-filter: blur(15px);
-  padding: 4vh 3vw;
-  border-radius: 2.5vw;
-  border: 0.3vw solid #00f0ff;
+  padding: 3rem 2.5rem;
+  border-radius: 25px;
+  border: 3px solid #00f0ff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 60vw;
-  box-shadow: 0 0 4vw rgba(0, 240, 255, 0.4),
-    inset 0 0 3vw rgba(0, 240, 255, 0.1);
-  gap: 4vh;
-  min-height: 35vh;
+  max-width: 800px;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+    inset 0 0 30px rgba(0, 240, 255, 0.1);
+  gap: 3rem;
+  min-height: 400px;
 }
 
 .current-word {
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: 4rem;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 0.3em;
   font-family: "Fira Code", monospace;
   text-align: center;
   line-height: 1.2;
-  text-shadow: 0 0 2vw rgba(255, 255, 255, 0.3);
-  min-height: 15vh;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  min-height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2031,17 +2184,17 @@ const getPlayerColor = (index) => {
 }
 
 .word-counter {
-  font-size: clamp(1rem, 2.2vw, 1.6rem);
+  font-size: 1.3rem;
   color: #39ff14;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-family: "Share Tech Mono", monospace;
   font-weight: 700;
-  text-shadow: 0 0 1.5vw #39ff14, 0 0 3vw #39ff14;
+  text-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
   background: rgba(57, 255, 20, 0.1);
-  padding: 1.5vh 2vw;
-  border-radius: 1.5vw;
-  border: 0.2vw solid rgba(57, 255, 20, 0.3);
+  padding: 1rem 1.5rem;
+  border-radius: 15px;
+  border: 2px solid rgba(57, 255, 20, 0.3);
 }
 
 .input-area {
@@ -2053,33 +2206,33 @@ const getPlayerColor = (index) => {
 
 .typing-input {
   width: 100%;
-  max-width: 50vw;
+  max-width: 600px;
   min-width: 300px;
-  padding: 2.5vh 3vw;
-  font-size: clamp(1rem, 2.2vw, 1.6rem);
+  padding: 1.5rem 2rem;
+  font-size: 1.3rem;
   font-family: "Fira Code", monospace;
   font-weight: 600;
   background: rgba(10, 25, 47, 0.95);
   color: #00f0ff;
-  border: 0.3vw solid #00f0ff;
-  border-radius: 2vw;
+  border: 3px solid #00f0ff;
+  border-radius: 20px;
   outline: none;
   transition: all 0.4s ease;
   margin: 0 auto;
   box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 0 2.5vw rgba(0, 240, 255, 0.4),
-    inset 0 0 2vw rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.4),
+    inset 0 0 20px rgba(0, 240, 255, 0.1);
   letter-spacing: 0.1em;
 }
 
 .typing-input:focus {
   border-color: #f021b9;
-  box-shadow: 0 0 4vw rgba(240, 33, 185, 0.8),
-    inset 0 0 2.5vw rgba(240, 33, 185, 0.15);
+  box-shadow: 0 0 40px rgba(240, 33, 185, 0.8),
+    inset 0 0 25px rgba(240, 33, 185, 0.15);
   background: rgba(10, 25, 47, 1);
   color: #f021b9;
-  transform: translateY(-0.3vh);
+  transform: translateY(-3px);
 }
 
 .typing-input::placeholder {
@@ -2095,22 +2248,22 @@ const getPlayerColor = (index) => {
   justify-content: center;
   position: relative;
   width: 100%;
-  height: 25vh;
+  height: 250px;
 }
 
 .keyboard-visual {
   background: rgba(26, 42, 74, 0.9);
   backdrop-filter: blur(15px);
-  padding: 2vh 2.5vw;
-  border-radius: 2.5vw;
-  border: 0.3vw solid #f021b9;
+  padding: 1.5rem 2rem;
+  border-radius: 25px;
+  border: 3px solid #f021b9;
   display: flex;
   flex-direction: column;
-  gap: 1.5vh;
-  max-width: 80vw;
+  gap: 1rem;
+  max-width: 1200px;
   width: 100%;
-  box-shadow: 0 0 4vw rgba(240, 33, 185, 0.5),
-    inset 0 0 2.5vw rgba(240, 33, 185, 0.1);
+  box-shadow: 0 0 40px rgba(240, 33, 185, 0.5),
+    inset 0 0 25px rgba(240, 33, 185, 0.1);
   margin: 0 auto;
   box-sizing: border-box;
   height: 100%;
@@ -2119,28 +2272,28 @@ const getPlayerColor = (index) => {
 .keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 1vw;
+  gap: 0.8rem;
   flex: 1;
 }
 
 .key {
-  min-width: clamp(50px, 5vw, 80px);
-  height: clamp(50px, 4vh, 70px);
+  min-width: 60px;
+  height: 50px;
   flex: 1;
-  max-width: 6vw;
+  max-width: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
-  border: 0.3vw solid #00f0ff;
-  border-radius: 1.5vw;
-  font-size: clamp(1rem, 2vw, 1.4rem);
+  border: 3px solid #00f0ff;
+  border-radius: 15px;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #00f0ff;
   transition: all 0.2s ease;
   cursor: default;
-  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.4),
-    inset 0 0 1vw rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4),
+    inset 0 0 10px rgba(0, 240, 255, 0.1);
   font-family: "Share Tech Mono", monospace;
   position: relative;
 }
@@ -2148,43 +2301,43 @@ const getPlayerColor = (index) => {
 .key:hover {
   background: linear-gradient(145deg, #1f3557, #142135);
   border-color: #f021b9;
-  transform: translateY(-0.5vh);
-  box-shadow: 0 0 3vw rgba(240, 33, 185, 0.8);
+  transform: translateY(-5px);
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.8);
   color: #f021b9;
 }
 
 /* Tecla presionada (efecto cuando el usuario pulsa una tecla física) */
 .key.pressed {
-  transform: translateY(0.4vh) scale(0.95);
+  transform: translateY(4px) scale(0.95);
   background: linear-gradient(180deg, #f021b9, #ff00ff);
   color: #ffffff;
-  box-shadow: 0 0 4vw rgba(240, 33, 185, 1) inset,
-    0 0 3.5vw rgba(240, 33, 185, 0.9);
+  box-shadow: 0 0 40px rgba(240, 33, 185, 1) inset,
+    0 0 35px rgba(240, 33, 185, 0.9);
   border-color: #ffffff;
-  text-shadow: 0 0 1vw #ffffff;
+  text-shadow: 0 0 10px #ffffff;
 }
 
 .key.wide {
   flex: 3;
-  min-width: clamp(200px, 20vw, 400px);
+  min-width: 300px;
   max-width: none;
 }
 .key.backspace {
   flex: 1.5;
-  min-width: clamp(100px, 10vw, 160px);
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  min-width: 130px;
+  font-size: 1.4rem;
 }
 
 /* Indicadores de otros jugadores en las teclas */
 .key-player-indicator {
   position: absolute;
-  top: -1vh;
-  right: -1vw;
-  width: clamp(15px, 2vw, 25px);
-  height: clamp(15px, 2vw, 25px);
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 0.2vw solid #ffffff;
-  box-shadow: 0 0 1.5vw rgba(0, 0, 0, 0.8);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
   z-index: 1;
 }
 
@@ -2197,15 +2350,15 @@ const getPlayerColor = (index) => {
 .current-word span {
   display: inline-block;
   transition: all 0.3s ease;
-  padding: 0.3vh 0.2vw;
-  border-radius: 0.8vw;
-  margin: 0 0.2vw;
+  padding: 0.3rem 0.2rem;
+  border-radius: 8px;
+  margin: 0 0.2rem;
 }
 
 /* Correcto: color verde neón brillante */
 .char-correct {
   color: #39ff14;
-  text-shadow: 0 0 1.5vw #39ff14, 0 0 3vw #39ff14;
+  text-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
   background: rgba(57, 255, 20, 0.15);
   transform: scale(1.05);
 }
@@ -2213,7 +2366,7 @@ const getPlayerColor = (index) => {
 /* Incorrecto: color rojo brillante con efecto de error */
 .char-incorrect {
   color: #ff3366;
-  text-shadow: 0 0 1.5vw #ff3366, 0 0 3vw #ff0000;
+  text-shadow: 0 0 15px #ff3366, 0 0 30px #ff0000;
   background: rgba(255, 51, 102, 0.2);
   animation: errorShake 0.5s ease;
   transform: scale(1.1);
@@ -2224,10 +2377,10 @@ const getPlayerColor = (index) => {
     transform: scale(1.1) translateX(0);
   }
   25% {
-    transform: scale(1.1) translateX(-0.3vw);
+    transform: scale(1.1) translateX(-3px);
   }
   75% {
-    transform: scale(1.1) translateX(0.3vw);
+    transform: scale(1.1) translateX(3px);
   }
   50% {
     opacity: 0.5;
@@ -2237,7 +2390,7 @@ const getPlayerColor = (index) => {
 /* Corregido: color amarillo-naranja neón brillante */
 .char-corrected {
   color: #ffd700;
-  text-shadow: 0 0 1.5vw #ffd700, 0 0 3vw #ffa500;
+  text-shadow: 0 0 15px #ffd700, 0 0 30px #ffa500;
   background: rgba(255, 215, 0, 0.15);
   transform: scale(1.05);
   animation: correctedGlow 0.6s ease;
@@ -2245,31 +2398,31 @@ const getPlayerColor = (index) => {
 
 @keyframes correctedGlow {
   0% {
-    box-shadow: 0 0 0.5vw rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
   }
   50% {
-    box-shadow: 0 0 2vw rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
   }
   100% {
-    box-shadow: 0 0 0.5vw rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
   }
 }
 
 .btn-back {
   position: fixed;
-  top: 2vh;
-  left: 2vw;
+  top: 20px;
+  left: 20px;
   background: rgba(26, 42, 74, 0.9);
-  border: 0.2vw solid #00f0ff;
+  border: 2px solid #00f0ff;
   color: #00f0ff;
-  padding: 1.5vh 2vw;
-  border-radius: 1.5vw;
-  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  padding: 1rem 1.5rem;
+  border-radius: 15px;
+  font-size: 1rem;
   font-family: 'Share Tech Mono', monospace;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
   z-index: 1000;
   backdrop-filter: blur(10px);
 }
@@ -2278,15 +2431,15 @@ const getPlayerColor = (index) => {
   background: rgba(240, 33, 185, 0.2);
   border-color: #f021b9;
   color: #f021b9;
-  transform: translateX(-0.5vw) scale(1.05);
-  box-shadow: 0 0 3vw rgba(240, 33, 185, 0.6);
+  transform: translateX(-5px) scale(1.05);
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.6);
 }
 
 /* === RESPONSIVE BREAKPOINTS PARA LAYOUT === */
 @media (max-width: 1200px) {
   .game-content-wrapper {
     flex-direction: column;
-    gap: 2vh;
+    gap: 2rem;
   }
   
   .players-panel {
@@ -2294,13 +2447,13 @@ const getPlayerColor = (index) => {
     min-width: auto;
     max-width: none;
     width: 100%;
-    max-height: 25vh;
+    max-height: 300px;
   }
   
   .player-list {
     flex-direction: row;
     overflow-x: auto;
-    gap: 2vw;
+    gap: 2rem;
   }
   
   .player-card {
@@ -2309,7 +2462,7 @@ const getPlayerColor = (index) => {
   }
   
   .word-display {
-    max-width: 90vw;
+    max-width: 1000px;
   }
 }
 
@@ -2690,7 +2843,400 @@ const getPlayerColor = (index) => {
   .player-card {
     min-width: 180px;
   }
+}
 
+/* ===== PANTALLA DE RESULTADOS FINALES ===== */
+.results-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 25, 47, 0.95);
+  z-index: 10000;
+  backdrop-filter: blur(8px);
+  animation: resultsSlideIn 0.6s ease-out;
+  padding: 2rem;
+  box-sizing: border-box;
+}
 
+@keyframes resultsSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.results-container {
+  background: linear-gradient(135deg, rgba(26, 42, 74, 0.95), rgba(15, 30, 50, 0.95));
+  border: 4px solid #f021b9;
+  border-radius: 25px;
+  padding: 3rem 2.5rem;
+  box-shadow: 
+    0 0 60px rgba(240, 33, 185, 0.8),
+    inset 0 0 40px rgba(240, 33, 185, 0.1);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  animation: containerGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes containerGlow {
+  0% {
+    box-shadow: 
+      0 0 60px rgba(240, 33, 185, 0.8),
+      inset 0 0 40px rgba(240, 33, 185, 0.1);
+  }
+  100% {
+    box-shadow: 
+      0 0 80px rgba(240, 33, 185, 1),
+      inset 0 0 50px rgba(240, 33, 185, 0.15);
+  }
+}
+
+/* === HEADER DE RESULTADOS === */
+.results-header {
+  text-align: center;
+}
+
+.results-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #f021b9;
+  text-shadow: 0 0 30px #f021b9, 0 0 60px #f021b9;
+  font-family: "Share Tech Mono", monospace;
+  letter-spacing: 0.2em;
+  margin-bottom: 2rem;
+  animation: titlePulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes titlePulse {
+  0% {
+    text-shadow: 0 0 30px #f021b9, 0 0 60px #f021b9;
+  }
+  100% {
+    text-shadow: 0 0 40px #f021b9, 0 0 80px #f021b9;
+  }
+}
+
+.winner-section {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(0, 240, 255, 0.2));
+  border: 3px solid #39ff14;
+  border-radius: 20px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+  box-shadow: 0 0 40px rgba(57, 255, 20, 0.6);
+  animation: winnerGlow 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes winnerGlow {
+  0% {
+    border-color: #39ff14;
+    box-shadow: 0 0 40px rgba(57, 255, 20, 0.6);
+  }
+  100% {
+    border-color: #00f0ff;
+    box-shadow: 0 0 50px rgba(0, 240, 255, 0.8);
+  }
+}
+
+.winner-label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #39ff14;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin-bottom: 1rem;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 20px #39ff14;
+}
+
+.winner-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #00f0ff;
+  text-shadow: 0 0 25px #00f0ff, 0 0 50px #00f0ff;
+  font-family: "Fira Code", monospace;
+  margin-bottom: 0.8rem;
+}
+
+.winner-stats {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffd700;
+  text-shadow: 0 0 15px #ffd700;
+  font-family: "Share Tech Mono", monospace;
+}
+
+/* === TABLA DE RESULTADOS === */
+.results-table {
+  background: rgba(10, 25, 47, 0.6);
+  border: 2px solid #00f0ff;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 100px 100px;
+  gap: 1rem;
+  background: linear-gradient(135deg, #f021b9, #00f0ff);
+  padding: 1.2rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 100px 100px;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  transition: all 0.3s ease;
+  font-family: "Fira Code", monospace;
+}
+
+.result-row:hover {
+  background: rgba(0, 240, 255, 0.1);
+  transform: translateX(8px);
+}
+
+.result-row.winner-row {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.15), rgba(255, 215, 0, 0.15));
+  border: 2px solid #ffd700;
+  border-left: 6px solid #39ff14;
+  margin: 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+}
+
+.pos-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #f021b9;
+  text-shadow: 0 0 10px #f021b9;
+}
+
+.position-number {
+  font-size: 1.4rem;
+}
+
+.trophy-icon {
+  font-size: 1.5rem;
+  animation: crownSpin 2s ease-in-out infinite;
+}
+
+@keyframes crownSpin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(15deg) scale(1.1); }
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #00f0ff;
+  text-shadow: 0 0 12px #00f0ff;
+}
+
+.player-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.player-name-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.words-cell {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #39ff14;
+  text-shadow: 0 0 10px #39ff14;
+  text-align: center;
+}
+
+.errors-cell {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ff6666;
+  text-shadow: 0 0 8px #ff6666;
+  text-align: center;
+}
+
+.wpm-cell {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
+  text-align: center;
+}
+
+/* === BOTONES DE ACCIÓN === */
+.results-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.btn-restart,
+.btn-exit {
+  padding: 1.2rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 3px solid;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: "Share Tech Mono", monospace;
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+}
+
+.btn-restart {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(0, 240, 255, 0.2));
+  border-color: #39ff14;
+  color: #39ff14;
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.5);
+}
+
+.btn-restart:hover {
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.4), rgba(0, 240, 255, 0.4));
+  border-color: #00f0ff;
+  color: #00f0ff;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.8);
+  text-shadow: 0 0 15px #00f0ff;
+}
+
+.btn-exit {
+  background: linear-gradient(135deg, rgba(240, 33, 185, 0.2), rgba(255, 100, 100, 0.2));
+  border-color: #f021b9;
+  color: #f021b9;
+  box-shadow: 0 0 25px rgba(240, 33, 185, 0.5);
+}
+
+.btn-exit:hover {
+  background: linear-gradient(135deg, rgba(240, 33, 185, 0.4), rgba(255, 100, 100, 0.4));
+  border-color: #ff6464;
+  color: #ff6464;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 0 40px rgba(255, 100, 100, 0.8);
+  text-shadow: 0 0 15px #ff6464;
+}
+
+/* === RESPONSIVE PARA RESULTADOS === */
+@media (max-width: 768px) {
+  .results-overlay {
+    padding: 1rem;
+  }
+
+  .results-container {
+    padding: 2rem 1.5rem;
+    gap: 2rem;
+  }
+
+  .results-title {
+    font-size: 1.8rem;
+  }
+
+  .winner-name {
+    font-size: 1.5rem;
+  }
+
+  .table-header,
+  .result-row {
+    grid-template-columns: 60px 1fr 70px 70px 70px;
+    gap: 0.5rem;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .results-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-restart,
+  .btn-exit {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    min-width: auto;
+  }
+}
+
+/* === MENSAJE INFORMATIVO === */
+.creator-only-message {
+  text-align: center;
+  background: rgba(255, 165, 0, 0.1);
+  border: 2px solid rgba(255, 165, 0, 0.4);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+  animation: messageGlow 2s ease-in-out infinite alternate;
+}
+
+.creator-only-message p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffa500;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.6);
+  font-family: "Share Tech Mono", monospace;
+  letter-spacing: 0.1em;
+}
+
+@keyframes messageGlow {
+  0% {
+    border-color: rgba(255, 165, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);
+  }
+  100% {
+    border-color: rgba(255, 165, 0, 0.6);
+    box-shadow: 0 0 25px rgba(255, 165, 0, 0.5);
+  }
 }
 </style>

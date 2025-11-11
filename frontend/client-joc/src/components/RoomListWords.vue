@@ -35,10 +35,10 @@ watch(() => props.rooms, (newRooms) => {
 const filteredRooms = computed(() => {
   console.log('🔍 Filtrando salas de PALABRAS');
   
-  // Filtrar salas de palabras (incluir salas sin gameMode por compatibilidad)
+  // Filtrar salas de palabras ÚNICAMENTE
   const wordsRooms = props.rooms.filter(room => {
-    const isWordsRoom = room.gameMode === 'palabras' || !room.gameMode || room.gameMode === '';
-    console.log(`🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> incluir en palabras: ${isWordsRoom}`);
+    const isWordsRoom = room.gameMode === 'palabras';
+    console.log(`🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> es de palabras: ${isWordsRoom}`);
     return isWordsRoom;
   });
   

@@ -94,15 +94,17 @@ const handleSubmit = () => {
 <style scoped>
 .welcome-screen {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #0a192f;
+  padding: clamp(1vh, 2vh, 4vh) clamp(2vw, 4vw, 6vw);
+  box-sizing: border-box;
   position: fixed;
-  overflow: hidden;
   top: 0;
   left: 0;
+  overflow-y: auto;
 }
 
 .welcome-screen::before {
@@ -126,10 +128,11 @@ const handleSubmit = () => {
 }
 
 .welcome-container {
-  width: 85vw;
-  height: 75vh;
-  max-width: none;
-  padding: 2vh 3vw;
+  width: clamp(400px, 40vw, 70vw);
+  height: auto;
+  max-height: 90vh;
+  min-height: auto;
+  padding: clamp(1rem, 2vh, 3vh) clamp(1.5rem, 3vw, 4vw);
   background: rgba(26, 42, 74, 0.95);
   backdrop-filter: blur(10px);
   border: 2px solid #00f0ff;
@@ -142,12 +145,13 @@ const handleSubmit = () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2vh;
-  overflow: hidden;
+  gap: clamp(0.8rem, 1.5vh, 2vh);
+  overflow-y: auto;
+  margin: clamp(1vh, 2vh, 3vh) 0;
 }
 
 .game-title {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(1.8rem, 3.5vw, 4rem);
   font-weight: 700;
   color: #f021b9;
   text-shadow: 0 0 10px rgba(240, 33, 185, 0.8),
@@ -155,7 +159,7 @@ const handleSubmit = () => {
   margin: 0;
   font-family: "Share Tech Mono", monospace;
   animation: glitch 3s infinite alternate;
-  letter-spacing: clamp(0.2rem, 0.5vw, 0.5rem);
+  letter-spacing: clamp(0.08rem, 0.25vw, 0.3rem);
 }
 
 @keyframes glitch {
@@ -179,36 +183,39 @@ const handleSubmit = () => {
 }
 
 .subtitle {
-  font-size: clamp(0.85rem, 1.3vw, 1rem);
+  font-size: clamp(0.6rem, 1vw, 1rem);
   color: #00f0ff;
   text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
   margin: 0;
   font-family: "Share Tech Mono", monospace;
-  letter-spacing: clamp(0.2rem, 0.4vw, 0.4rem);
+  letter-spacing: clamp(0.08rem, 0.15vw, 0.25rem);
   text-transform: uppercase;
 }
 
 .welcome-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2.5vw;
-  align-items: center;
-  padding: 0;
+  gap: clamp(1rem, 2.5vw, 3rem);
+  align-items: start;
+  padding: clamp(0.5rem, 1vh, 1.5rem) 0;
+  margin: clamp(0.5rem, 1vh, 1.5rem) 0;
 }
 
 .input-label {
-  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-size: clamp(0.7rem, 1.1vw, 1.1rem);
   color: #00f0ff;
   text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
   font-family: "Share Tech Mono", monospace;
-  letter-spacing: clamp(0.1rem, 0.2vw, 0.2rem);
+  letter-spacing: clamp(0.08rem, 0.18vw, 0.25rem);
   text-transform: uppercase;
-  margin-bottom: 1vh;
+  margin-bottom: clamp(0.6rem, 1vh, 1.2rem);
+  display: block;
+  text-align: center;
 }
 
 .player-input {
-  padding: 1.5vh 2vw;
-  font-size: clamp(1rem, 1.4vw, 1.3rem);
+  padding: clamp(0.8rem, 1.5vh, 2rem) clamp(1rem, 2vw, 2.5rem);
+  font-size: clamp(1rem, 1.3vw, 1.5rem);
   font-family: "Fira Code", monospace;
   background: rgba(10, 25, 47, 0.6);
   color: #00f0ff;
@@ -218,7 +225,9 @@ const handleSubmit = () => {
   transition: all 0.3s ease;
   text-align: center;
   box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
-  min-height: 50px;
+  min-height: clamp(40px, 5vh, 65px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .player-input::placeholder {
@@ -236,33 +245,35 @@ const handleSubmit = () => {
 .color-selector {
   display: flex;
   flex-direction: column;
-  gap: 1.5vh;
+  gap: clamp(0.8rem, 1.2vh, 1.5rem);
   align-items: center;
   justify-content: center;
-  padding: 2vh 2vw;
+  padding: clamp(1rem, 2vh, 2.5rem) clamp(0.8rem, 1.5vw, 2rem);
   background: rgba(10, 25, 47, 0.4);
   border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .avatar-preview {
-  width: clamp(60px, 7vw, 80px);
-  height: clamp(60px, 7vw, 80px);
+  width: clamp(40px, 4vw, 70px);
+  height: clamp(40px, 4vw, 70px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+  font-size: clamp(1.2rem, 2vw, 2.2rem);
   font-weight: 700;
   color: #0a192f;
-  box-shadow: 0 0 20px currentColor;
+  box-shadow: 0 0 15px currentColor;
   transition: all 0.3s ease;
   font-family: "Fira Code", monospace;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .color-input {
   width: 100%;
-  height: 45px;
+  height: clamp(30px, 3vh, 50px);
   border: 2px solid rgba(0, 240, 255, 0.4);
   border-radius: 8px;
   cursor: pointer;
@@ -277,19 +288,21 @@ const handleSubmit = () => {
 
 .color-presets {
   display: flex;
-  gap: 0.5rem;
+  gap: clamp(0.4rem, 0.8vw, 0.8rem);
   flex-wrap: wrap;
   justify-content: center;
+  max-width: 100%;
+  padding: 0 clamp(0.5rem, 1vw, 1rem);
 }
 
 .color-preset {
-  width: clamp(35px, 4.5vw, 50px);
-  height: clamp(35px, 4.5vw, 50px);
+  width: clamp(25px, 2.5vw, 45px);
+  height: clamp(25px, 2.5vw, 45px);
   border-radius: 50%;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
 }
 
 .color-preset:hover {
@@ -304,9 +317,9 @@ const handleSubmit = () => {
 }
 
 .btn-continue {
-  padding: 1.8vh 4vw;
-  min-height: 55px;
-  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  padding: clamp(0.6rem, 1.2vh, 1.5rem) clamp(1.5rem, 3vw, 4rem);
+  min-height: clamp(40px, 4vh, 55px);
+  font-size: clamp(0.8rem, 1.1vw, 1.2rem);
   font-weight: 700;
   font-family: "Share Tech Mono", monospace;
   background: linear-gradient(135deg, #f021b9, #00f0ff);
@@ -316,14 +329,14 @@ const handleSubmit = () => {
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  letter-spacing: clamp(0.15rem, 0.3vw, 0.25rem);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.4);
+  letter-spacing: clamp(0.1rem, 0.18vw, 0.25rem);
+  box-shadow: 0 0 15px rgba(240, 33, 185, 0.4);
   position: relative;
   overflow: hidden;
   grid-column: 1 / -1;
   justify-self: center;
-  width: 40%;
-  min-width: 250px;
+  width: clamp(200px, 22vw, 350px);
+  margin-top: clamp(0.3rem, 0.8vh, 1rem);
 }
 
 .btn-continue::before {
@@ -378,18 +391,101 @@ const handleSubmit = () => {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .game-title {
-    font-size: 3rem;
+@media (max-height: 800px) {
+  /* Ventanas con altura limitada */
+  .welcome-screen {
+    padding: 1vh 2vw;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 2vh;
   }
+  
+  .welcome-container {
+    width: clamp(380px, 38vw, 65vw);
+    max-height: 95vh;
+    padding: clamp(0.8rem, 1.5vh, 2vh) clamp(1.2rem, 2.5vw, 3vw);
+    gap: clamp(0.5rem, 1vh, 1.2vh);
+    margin: 1vh 0;
+  }
+  
+  .welcome-form {
+    gap: clamp(0.8rem, 1.8vw, 2rem);
+    padding: clamp(0.3rem, 0.6vh, 0.8rem) 0;
+    margin: clamp(0.3rem, 0.6vh, 0.8rem) 0;
+  }
+  
+  .game-title {
+    font-size: clamp(1.5rem, 3vw, 3.2rem);
+  }
+  
+  .btn-continue {
+    margin-top: clamp(0.2rem, 0.5vh, 0.6rem);
+  }
+}
 
-  .subtitle {
-    font-size: 0.85rem;
-    letter-spacing: 0.2rem;
+@media (max-width: 1400px) and (max-height: 900px) {
+  /* Laptops estándar */
+  .welcome-container {
+    width: clamp(350px, 35vw, 60vw);
+    padding: clamp(1rem, 2vh, 2.5vh) clamp(1.2rem, 2.5vw, 3.5vw);
+  }
+}
+
+@media (max-width: 1200px) {
+  .welcome-screen {
+    padding: 3vh 4vw;
+  }
+  
+  .welcome-container {
+    width: clamp(400px, 45vw, 75vw);
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-screen {
+    padding: 2vh 2vw;
   }
 
   .welcome-container {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1.2rem;
+    width: clamp(350px, 90vw, 95vw);
+  }
+
+  .welcome-form {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .game-title {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+  }
+
+  .subtitle {
+    font-size: clamp(0.7rem, 2vw, 1rem);
+  }
+
+  .btn-continue {
+    width: 90%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-screen {
+    padding: 1vh 1vw;
+  }
+
+  .welcome-container {
+    padding: 1rem 0.8rem;
+    width: 95vw;
+  }
+
+  .game-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+
+  .subtitle {
+    font-size: clamp(0.6rem, 3vw, 0.8rem);
   }
 }
 </style>

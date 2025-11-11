@@ -743,6 +743,7 @@ function broadcastRoomList() {
     playerCount: room.players.length,
     maxPlayers: room.maxPlayers,
     isPrivate: room.isPrivate,
+    gameMode: room.config?.gameMode || 'palabras', // Incluir gameMode
   }));
   console.log("📢 Broadcasting room list:", roomList);
   io.emit("updateRoomList", roomList);
@@ -775,6 +776,7 @@ io.on("connection", (socket) => {
       playerCount: room.players.length,
       maxPlayers: room.maxPlayers,
       isPrivate: room.isPrivate,
+      gameMode: room.config?.gameMode || 'palabras', // Incluir gameMode
     }));
     console.log(`📥 Enviando lista de salas a ${socket.id}:`, roomList);
     socket.emit("updateRoomList", roomList);

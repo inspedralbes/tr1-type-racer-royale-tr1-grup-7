@@ -257,13 +257,14 @@ function createRoom(roomConfig) {
     ...roomConfig, // viene de CreateRoom.vue
     playerName: nomJugador.value,
     playerColor: playerColor.value,
-    gameMode: modoJuego.value,
+    // No sobrescribir gameMode - ya viene en roomConfig desde el componente específico
   };
 
   // Guardar el nombre de la sala localmente
   nomSala.value = roomConfig.roomName;
 
   console.log("🚀 Creando sala con configuración:", fullRoomConfig);
+  console.log("🎮 GameMode específico:", fullRoomConfig.gameMode);
   // Llamar al communicationManager para que emita el evento
   communicationManager.createRoom(fullRoomConfig);
 
@@ -517,6 +518,7 @@ onMounted(() => {
       :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
       :gameText="gameText"
       :gameWords="gameWords"
+      :isRoomAdmin="isRoomAdmin"
       @back-to-lobby="vistaActual = 'lobby'"
       key="joc-palabras"
     />
