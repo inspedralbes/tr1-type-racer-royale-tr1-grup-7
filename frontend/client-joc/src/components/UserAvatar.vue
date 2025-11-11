@@ -4,7 +4,7 @@
       {{ playerName ? playerName.charAt(0).toUpperCase() : "?" }}
     </div>
     <span class="player-name-text">{{ playerName }}</span>
-    <button @click="goHome" class="btn-home" title="Tornar a l'inici">
+    <button @click="goHome" class="btn-home" title="Volver al inicio">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -14,7 +14,7 @@
         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
       </svg>
     </button>
-    <button @click="openSettings" class="btn-settings" title="Configuració">
+    <button @click="openSettings" class="btn-settings" title="Configuración">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"

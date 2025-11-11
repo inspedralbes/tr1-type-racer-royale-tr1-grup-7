@@ -14,12 +14,15 @@ const emit = defineEmits(["createRoom", "back", "goToRoomList", "notify"]);
 const roomName = ref("");
 const maxPlayers = ref(4);
 const roomPassword = ref("");
+// timeLimit almacenado en MINUTOS si es >=1, pero añadimos opciones cortas en segundos.
+// Para mantener compatibilidad con el backend (usa minutos * 60 al entrar al juego),
+// guardaremos valores menores a 1 como fracción de minuto (p.ej. 15s = 0.25, 30s = 0.5).
 const timeLimit = ref(3);
 
 function handleCreateRoom() {
   if (!roomName.value.trim()) {
     emit("notify", {
-      message: "Per favor, introdueix un nom per a la sala.",
+      message: "Por favor, introduce un nombre para la sala.",
       type: "warning",
     });
     return;
@@ -29,6 +32,7 @@ function handleCreateRoom() {
     maxPlayers: maxPlayers.value,
     password: roomPassword.value,
     isPrivate: false, // Siempre pública
+    // Enviamos timeLimit como minutos (puede ser fracción para segundos)
     timeLimit: timeLimit.value,
     // Valores fijos para modo palabras
     gameMode: "palabras",
@@ -47,7 +51,7 @@ function handleBack() {
 <template>
   <div class="create-room-container">
     <div class="header-section">
-      <button @click="handleBack" class="btn-back">← Enrere</button>
+      <button @click="handleBack" class="btn-back">← Atrás</button>
       <h2 class="page-title">Crear sala - PALABRAS</h2>
     </div>
 
@@ -59,7 +63,7 @@ function handleBack() {
           <input
             v-model="roomName"
             type="text"
-            placeholder="Escriu el nom de la sala de palabras..."
+            placeholder="Escribe el nombre de la sala de palabras..."
             class="room-input"
             @keyup.enter="handleCreateRoom"
             autofocus
@@ -70,42 +74,46 @@ function handleBack() {
         <div class="config-grid">
           <!-- Máximo jugadores -->
           <div class="config-box">
-            <label class="config-label">Número máximo de jugadors</label>
+            <label class="config-label">Número máximo de jugadores</label>
             <select v-model.number="maxPlayers" class="config-select">
-              <option :value="2">2 jugadors</option>
-              <option :value="4">4 jugadors</option>
-              <option :value="6">6 jugadors</option>
-              <option :value="8">8 jugadors</option>
+              <option :value="2">2 jugadores</option>
+              <option :value="4">4 jugadores</option>
+              <option :value="6">6 jugadores</option>
+              <option :value="8">8 jugadores</option>
             </select>
           </div>
 
           <!-- Contraseña -->
           <div class="config-box">
-            <label class="config-label">Contrasenya (opcional)</label>
+            <label class="config-label">Contraseña (opcional)</label>
             <input
               v-model="roomPassword"
               type="text"
-              placeholder="Sense contrasenya"
+              placeholder="Sin contraseña"
               class="config-input"
             />
           </div>
 
-
-
           <!-- Límite de tiempo -->
           <div class="config-box">
-            <label class="config-label">Límit de temps (minuts)</label>
+            <label class="config-label">Límite de tiempo</label>
             <select v-model.number="timeLimit" class="config-select">
-              <option :value="1">1 minut</option>
-              <option :value="3">3 minuts</option>
-              <option :value="5">5 minuts</option>
-              <option :value="10">10 minuts</option>
+              <!-- Opciones cortas en segundos representadas como fracción de minuto -->
+              <option :value="0.25">15 segundos</option>
+              <option :value="0.5">30 segundos</option>
+              <option :value="1">1 minuto</option>
+              <option :value="2">2 minutos</option>
+              <option :value="3">3 minutos</option>
+              <option :value="5">5 minutos</option>
+              <option :value="10">10 minutos</option>
             </select>
           </div>
 
           <!-- Botón Crear (grande, abajo) -->
           <div class="config-box create-button-box">
-            <button @click="handleCreateRoom" class="btn-create">CREAR SALA PALABRAS</button>
+            <button @click="handleCreateRoom" class="btn-create">
+              CREAR SALA PALABRAS
+            </button>
           </div>
         </div>
       </div>

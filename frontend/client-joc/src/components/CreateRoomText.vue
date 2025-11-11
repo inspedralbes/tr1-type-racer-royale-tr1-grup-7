@@ -22,7 +22,7 @@ const theme = ref("aleatori");
 function handleCreateRoom() {
   if (!roomName.value.trim()) {
     emit("notify", {
-      message: "Per favor, introdueix un nom per a la sala.",
+      message: "Por favor, introduce un nombre para la sala.",
       type: "warning",
     });
     return;
@@ -50,7 +50,7 @@ function handleBack() {
 <template>
   <div class="create-room-container">
     <div class="header-section">
-      <button @click="handleBack" class="btn-back">← Enrere</button>
+      <button @click="handleBack" class="btn-back">← Atrás</button>
       <h2 class="page-title">Crear sala - TEXTO</h2>
     </div>
 
@@ -62,7 +62,7 @@ function handleBack() {
           <input
             v-model="roomName"
             type="text"
-            placeholder="Escriu el nom de la sala de texto..."
+            placeholder="Escribe el nombre de la sala de texto..."
             class="room-input"
             @keyup.enter="handleCreateRoom"
             autofocus
@@ -73,55 +73,53 @@ function handleBack() {
         <div class="config-grid">
           <!-- Máximo jugadores -->
           <div class="config-box">
-            <label class="config-label">Número máximo de jugadors</label>
+            <label class="config-label">Número máximo de jugadores</label>
             <select v-model.number="maxPlayers" class="config-select">
-              <option :value="2">2 jugadors</option>
-              <option :value="4">4 jugadors</option>
-              <option :value="6">6 jugadors</option>
-              <option :value="8">8 jugadors</option>
+              <option :value="2">2 jugadores</option>
+              <option :value="4">4 jugadores</option>
+              <option :value="6">6 jugadores</option>
+              <option :value="8">8 jugadores</option>
             </select>
           </div>
 
           <!-- Contraseña -->
           <div class="config-box">
-            <label class="config-label">Contrasenya (opcional)</label>
+            <label class="config-label">Contraseña (opcional)</label>
             <input
               v-model="roomPassword"
               type="text"
-              placeholder="Sense contrasenya"
+              placeholder="Sin contraseña"
               class="config-input"
             />
           </div>
 
-
-
           <!-- Límite de tiempo -->
           <div class="config-box">
-            <label class="config-label">Límit de temps (minuts)</label>
+            <label class="config-label">Límite de tiempo (minutos)</label>
             <select v-model.number="timeLimit" class="config-select">
-              <option :value="1">1 minut</option>
-              <option :value="3">3 minuts</option>
-              <option :value="5">5 minuts</option>
-              <option :value="10">10 minuts</option>
+              <option :value="1">1 minuto</option>
+              <option :value="3">3 minutos</option>
+              <option :value="5">5 minutos</option>
+              <option :value="10">10 minutos</option>
             </select>
           </div>
 
           <!-- Número de rondas -->
           <div class="config-box">
-            <label class="config-label">Nombre de rondes</label>
+            <label class="config-label">Número de rondas</label>
             <select v-model.number="numRounds" class="config-select">
               <option :value="1">1 ronda</option>
-              <option :value="3">3 rondes</option>
-              <option :value="5">5 rondes</option>
-              <option :value="7">7 rondes</option>
+              <option :value="3">3 rondas</option>
+              <option :value="5">5 rondas</option>
+              <option :value="7">7 rondas</option>
             </select>
           </div>
 
           <!-- Dificultad -->
           <div class="config-box">
-            <label class="config-label">Dificultat</label>
+            <label class="config-label">Dificultad</label>
             <select v-model="difficulty" class="config-select">
-              <option value="facil">Fàcil</option>
+              <option value="facil">Fácil</option>
               <option value="normal">Normal</option>
               <option value="dificil">Difícil</option>
             </select>
@@ -129,19 +127,21 @@ function handleBack() {
 
           <!-- Temática -->
           <div class="config-box">
-            <label class="config-label">Temàtica</label>
+            <label class="config-label">Temática</label>
             <select v-model="theme" class="config-select">
-              <option value="aleatori">Aleatori</option>
-              <option value="animals">Animals</option>
-              <option value="pel·licules">Pel·lícules</option>
-              <option value="programacio">Programació</option>
-              <option value="esports">Esports</option>
+              <option value="aleatori">Aleatorio</option>
+              <option value="animals">Animales</option>
+              <option value="pel·licules">Películas</option>
+              <option value="programacio">Programación</option>
+              <option value="esports">Deportes</option>
             </select>
           </div>
 
           <!-- Botón Crear (grande, abajo) -->
           <div class="config-box create-button-box">
-            <button @click="handleCreateRoom" class="btn-create">CREAR SALA TEXTO</button>
+            <button @click="handleCreateRoom" class="btn-create">
+              CREAR SALA TEXTO
+            </button>
           </div>
         </div>
       </div>
@@ -232,8 +232,7 @@ function handleBack() {
   font-weight: 700;
   margin: 0;
   font-family: "Share Tech Mono", monospace;
-  text-shadow: 0 0 10px rgba(255, 102, 0, 0.8),
-    0 0 20px rgba(255, 102, 0, 0.5);
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.8), 0 0 20px rgba(255, 102, 0, 0.5);
   letter-spacing: 0.15rem;
 }
 

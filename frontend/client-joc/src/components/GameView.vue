@@ -445,7 +445,7 @@ const getPlayerIndicator = (playerProgress) => {
               v-model="userInput"
               @input="handleInput"
               @keydown="onKeyDown"
-              placeholder="Comença a escriure..."
+              placeholder="Empieza a escribir..."
               class="typing-input"
               :disabled="!showContent"
               ref="typingInputRef"

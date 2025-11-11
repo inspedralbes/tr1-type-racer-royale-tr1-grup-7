@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed } from "vue";
 import GameEngineWords from "./components/GameEngineWords.vue";
 import GameView from "./components/GameView.vue";
 import RoomListWords from "./components/RoomListWords.vue";
@@ -21,6 +21,7 @@ import communicationManager from "./services/communicationManager.js";
 // Flujo: inicio -> modoJuego -> salaEspera -> roomList/createRoom -> lobby -> joc
 const vistaActual = ref("inicio");
 const nomJugador = ref("");
+import soundManager from "./services/soundManager.js";
 const playerColor = ref("#F021B9"); // Color del avatar del jugador
 const modoJuego = ref(""); // 'palabras' o 'texto'
 const nomSala = ref("");
@@ -34,6 +35,7 @@ const gameWords = ref([]); // Palabras sincronizadas del servidor
 // Configuraciones globales
 const volume = ref(50);
 const showSettings = ref(false);
+const musicEnabled = ref(true);
 
 // Estado de los diálogos
 const showPasswordDialog = ref(false);
@@ -162,10 +164,18 @@ function saveSettings(settings) {
     playerColor.value = settings.playerColor;
   }
   volume.value = settings.volume;
+  if (typeof settings.musicEnabled === "boolean") {
+    musicEnabled.value = settings.musicEnabled;
+  }
 
   showSettings.value = false;
-  addToast({ message: "Configuració guardada correctament", type: "success" });
+  addToast({
+    message: "Configuración guardada correctamente",
+    type: "success",
+  });
 }
+// Actualizar volumen del gestor de sonido
+soundManager.setVolume((volume.value ?? 50) / 100);
 
 function goToHome() {
   // Desconectar de la sala si está en una
@@ -197,7 +207,7 @@ function joinRoom(roomName) {
   const room = activeRooms.value.find((r) => r.name === roomName);
 
   if (!room) {
-    enqueueMessage({ message: "La sala no existeix.", type: "error" });
+    enqueueMessage({ message: "La sala no existe.", type: "error" });
     return;
   }
 
@@ -397,12 +407,56 @@ onMounted(() => {
   // Escuchar si el jugador ha sido expulsado
   communicationManager.onKicked(() => {
     enqueueMessage({
-      message: "Has estat expulsat de la sala per l'administrador",
+      message: "Has sido expulsado de la sala por el administrador",
       type: "warning",
-      title: "Expulsat",
+      title: "Expulsado",
     });
     leaveRoom();
   });
+});
+
+// Inicialización de audio y click SFX global
+onMounted(() => {
+  const initOnce = async () => {
+    await soundManager.init();
+    soundManager.setVolume((volume.value ?? 50) / 100);
+    // Start background music only if enabled
+    if (musicEnabled.value) soundManager.playMusic();
+  };
+
+  const clickHandler = (e) => {
+    const target = e.target;
+    const btn = target?.closest?.(
+      'button, [role="button"], .btn, .btn-action, .btn-start, .btn-create, .btn-exit, .btn-restart, .btn-back, .btn-sortir, .btn-kick'
+    );
+    if (btn) soundManager.playClick();
+  };
+
+  const firstUserGesture = () => {
+    initOnce();
+    window.removeEventListener("pointerdown", firstUserGesture, true);
+    window.removeEventListener("keydown", firstUserGesture, true);
+  };
+
+  window.addEventListener("pointerdown", firstUserGesture, true);
+  window.addEventListener("keydown", firstUserGesture, true);
+  document.addEventListener("click", clickHandler, true);
+
+  onUnmounted(() => {
+    document.removeEventListener("click", clickHandler, true);
+    window.removeEventListener("pointerdown", firstUserGesture, true);
+    window.removeEventListener("keydown", firstUserGesture, true);
+  });
+});
+
+// React to musicEnabled changes (live toggle)
+watch(musicEnabled, (nv) => {
+  if (!soundManager.initialized) return; // will be started on init if needed
+  if (nv) {
+    if (!soundManager.musicPlaying) soundManager.playMusic();
+  } else {
+    soundManager.stopMusic();
+  }
 });
 </script>
 
@@ -448,7 +502,7 @@ onMounted(() => {
       @back="backToRoomAction"
       key="roomListWords"
     />
-    
+
     <!-- Lista de salas para TEXTO -->
     <RoomListText
       v-else-if="vistaActual === 'roomList' && modoJuego === 'texto'"
@@ -472,7 +526,7 @@ onMounted(() => {
       @back="backToRoomAction"
       key="createRoomWords"
     />
-    
+
     <!-- Crear sala para TEXTO -->
     <CreateRoomText
       v-else-if="vistaActual === 'createRoom' && modoJuego === 'texto'"
@@ -492,6 +546,7 @@ onMounted(() => {
       :room-config="currentRoomConfig || {}"
       :is-admin="isRoomAdmin"
       :current-player-id="communicationManager.getSocketId() || ''"
+      :game-mode="modoJuego"
       @start-game="startGame"
       @leave-room="leaveRoom"
       @kick-player="kickPlayer"
@@ -533,7 +588,7 @@ onMounted(() => {
     <ConfirmDialog
       :isOpen="showKickConfirmDialog"
       title="Expulsar jugador"
-      :message="`Estàs segur que vols expulsar a ${pendingPlayerKick?.name}?`"
+      :message="`¿Estás seguro de que quieres expulsar a ${pendingPlayerKick?.name}?`"
       @confirm="handleKickConfirm"
       @cancel="handleKickCancel"
     />
@@ -560,6 +615,7 @@ onMounted(() => {
       :player-name="nomJugador"
       :player-color="playerColor"
       :volume="volume"
+      :music-enabled="musicEnabled"
       @close="closeSettings"
       @save="saveSettings"
     />
@@ -581,13 +637,14 @@ onMounted(() => {
 .app-container {
   width: 100vw;
   height: 100vh;
-  padding: 2vh 3vw;
+  padding: 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  justify-content: flex-start;
+  overflow: hidden; /* Solicitud: no scroll en la lobby */
+  padding-top: clamp(1vh, 2vh, 24px); /* Pequeño margen superior global */
 }
 
 .main-title {
@@ -595,12 +652,14 @@ onMounted(() => {
   font-weight: 700;
   font-family: "Share Tech Mono", monospace;
   color: #f021b9;
-  margin-bottom: 2vh;
+  margin: 0 0 2vh 0; /* El margen superior lo aporta el padding del contenedor */
   text-transform: uppercase;
   letter-spacing: clamp(0.3rem, 0.5vw, 0.8rem);
   filter: drop-shadow(0 0 20px #f021b9) drop-shadow(0 0 40px #f021b9);
   animation: glitch 3s infinite;
   position: relative;
+  line-height: 1.15;
+  overflow: visible; /* Evitar recorte visual en animación */
 }
 
 @keyframes glitch {

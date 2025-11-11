@@ -3,58 +3,61 @@
     <div class="dialog-box">
       <h3 class="dialog-title">{{ title }}</h3>
       <p class="dialog-message">{{ message }}</p>
-      <input 
-        v-model="password" 
-        type="password" 
+      <input
+        v-model="password"
+        type="password"
         class="dialog-input"
-        placeholder="Introdueix la contrasenya..."
+        placeholder="Introduce la contraseña..."
         @keyup.enter="confirm"
         autofocus
       />
       <div class="dialog-buttons">
         <button @click="confirm" class="btn-confirm">Aceptar</button>
-        <button @click="cancel" class="btn-cancel">Cancel·lar</button>
+        <button @click="cancel" class="btn-cancel">Cancelar</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: false
+    default: false,
   },
   title: {
     type: String,
-    default: 'Contrasenya requerida'
+    default: "Contraseña requerida",
   },
   message: {
     type: String,
-    default: 'Aquesta sala és privada. Introdueix la contrasenya:'
-  }
+    default: "Esta sala es privada. Introduce la contraseña:",
+  },
 });
 
-const emit = defineEmits(['confirm', 'cancel']);
+const emit = defineEmits(["confirm", "cancel"]);
 
-const password = ref('');
+const password = ref("");
 
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    password.value = '';
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal) {
+      password.value = "";
+    }
   }
-});
+);
 
 const confirm = () => {
-  emit('confirm', password.value);
-  password.value = '';
+  emit("confirm", password.value);
+  password.value = "";
 };
 
 const cancel = () => {
-  emit('cancel');
-  password.value = '';
+  emit("cancel");
+  password.value = "";
 };
 </script>
 
@@ -74,41 +77,42 @@ const cancel = () => {
 }
 
 .dialog-box {
-  background: linear-gradient(145deg, #1A2A4A, #0F1A2F);
-  border: 2px solid #00F0FF;
+  background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
+  border: 2px solid #00f0ff;
   border-radius: 16px;
   padding: 2rem;
   min-width: 400px;
   max-width: 90%;
-  box-shadow: 0 0 40px rgba(0, 240, 255, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.5),
+    inset 0 0 20px rgba(0, 240, 255, 0.1);
 }
 
 .dialog-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #F021B9;
+  color: #f021b9;
   margin: 0 0 1rem 0;
   text-align: center;
-  font-family: 'Share Tech Mono', monospace;
-  text-shadow: 0 0 10px #F021B9;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 10px #f021b9;
 }
 
 .dialog-message {
   font-size: 1rem;
-  color: #E0E0E0;
+  color: #e0e0e0;
   margin: 0 0 1.5rem 0;
   text-align: center;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
 }
 
 .dialog-input {
   width: 100%;
   padding: 1rem;
   font-size: 1.1rem;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   background: rgba(10, 25, 47, 0.8);
-  color: #00F0FF;
-  border: 2px solid #00F0FF;
+  color: #00f0ff;
+  border: 2px solid #00f0ff;
   border-radius: 8px;
   outline: none;
   margin-bottom: 1.5rem;
@@ -117,9 +121,9 @@ const cancel = () => {
 }
 
 .dialog-input:focus {
-  border-color: #F021B9;
+  border-color: #f021b9;
   box-shadow: 0 0 20px rgba(240, 33, 185, 0.5);
-  color: #F021B9;
+  color: #f021b9;
 }
 
 .dialog-buttons {
@@ -133,7 +137,7 @@ const cancel = () => {
   padding: 0.75rem 2rem;
   font-size: 1rem;
   font-weight: 600;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: "Share Tech Mono", monospace;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -142,9 +146,9 @@ const cancel = () => {
 }
 
 .btn-confirm {
-  background: linear-gradient(135deg, #00F0FF, #0088FF);
-  color: #0A192F;
-  border: 2px solid #00F0FF;
+  background: linear-gradient(135deg, #00f0ff, #0088ff);
+  color: #0a192f;
+  border: 2px solid #00f0ff;
   box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
 }
 
@@ -155,8 +159,8 @@ const cancel = () => {
 
 .btn-cancel {
   background: transparent;
-  color: #FF0000;
-  border: 2px solid #FF0000;
+  color: #ff0000;
+  border: 2px solid #ff0000;
   box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
 }
 

@@ -1,84 +1,101 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch } from "vue";
 
 const props = defineProps({
   rooms: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   playerName: {
     type: String,
-    default: ''
-  }
+    default: "",
+  },
 });
 
-const emit = defineEmits(['joinRoom', 'createRoom', 'back', 'notify']);
+const emit = defineEmits(["joinRoom", "createRoom", "back", "notify"]);
 
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 // Debug: Ver qué rooms estamos recibiendo
-watch(() => props.rooms, (newRooms) => {
-  console.log('🔍 RoomListText recibió rooms:', newRooms);
-  console.log('🔍 Tipo:', typeof newRooms, 'Es Array:', Array.isArray(newRooms));
-  console.log('🔍 Longitud:', newRooms?.length);
-  newRooms?.forEach((room, index) => {
-    console.log(`🔍 Room ${index}:`, {
-      name: room.name,
-      gameMode: room.gameMode,
-      isPrivate: room.isPrivate,
-      playerCount: room.playerCount
+watch(
+  () => props.rooms,
+  (newRooms) => {
+    console.log("🔍 RoomListText recibió rooms:", newRooms);
+    console.log(
+      "🔍 Tipo:",
+      typeof newRooms,
+      "Es Array:",
+      Array.isArray(newRooms)
+    );
+    console.log("🔍 Longitud:", newRooms?.length);
+    newRooms?.forEach((room, index) => {
+      console.log(`🔍 Room ${index}:`, {
+        name: room.name,
+        gameMode: room.gameMode,
+        isPrivate: room.isPrivate,
+        playerCount: room.playerCount,
+      });
     });
-  });
-}, { immediate: true });
+  },
+  { immediate: true }
+);
 
 // Filtrar salas SOLO DE TEXTO
 const filteredRooms = computed(() => {
-  console.log('🔍 Filtrando salas de TEXTO');
-  
+  console.log("🔍 Filtrando salas de TEXTO");
+
   // Filtrar salas de texto (solo las que específicamente son de texto)
-  const textRooms = props.rooms.filter(room => {
-    const isTextRoom = room.gameMode === 'texto';
-    console.log(`🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> es de texto: ${isTextRoom}`);
+  const textRooms = props.rooms.filter((room) => {
+    const isTextRoom = room.gameMode === "texto";
+    console.log(
+      `🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> es de texto: ${isTextRoom}`
+    );
     return isTextRoom;
   });
-  
-  console.log('🔍 Salas de texto encontradas:', textRooms);
+
+  console.log("🔍 Salas de texto encontradas:", textRooms);
 
   if (!searchQuery.value.trim()) {
     // Sin búsqueda: mostrar TODAS las salas de texto (ya no hay privadas, todas son públicas)
-    console.log('🔍 Mostrando TODAS las salas de texto (sin filtrar por privacidad):', textRooms);
+    console.log(
+      "🔍 Mostrando TODAS las salas de texto (sin filtrar por privacidad):",
+      textRooms
+    );
     return textRooms;
   }
-  
+
   // Con búsqueda: mostrar tanto públicas como privadas de texto que coincidan
-  const searchResults = textRooms.filter(room => 
+  const searchResults = textRooms.filter((room) =>
     room.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
-  console.log('🔍 Resultados de búsqueda en texto:', searchResults);
+  console.log("🔍 Resultados de búsqueda en texto:", searchResults);
   return searchResults;
 });
 
 function handleJoinRoom(room) {
   if (!props.playerName.trim()) {
-    emit('notify', { message: 'Per favor, introdueix el teu nom primer.', type: 'warning' });
+    emit("notify", {
+      message: "Por favor, introduce tu nombre primero.",
+      type: "warning",
+    });
     return;
   }
-  if (room) emit('joinRoom', room.name);
+  if (room) emit("joinRoom", room.name);
 }
 
 function handleCreateRoom() {
-  emit('createRoom');
+  emit("createRoom");
 }
 
 function handleBack() {
-  emit('back');
+  emit("back");
 }
 </script>
 
 <template>
   <div class="room-list-container">
     <div class="header-section">
-      <button @click="handleBack" class="btn-back">← Enrere</button>
+      <button @click="handleBack" class="btn-back">← Atrás</button>
       <h2 class="page-title">Salas TEXTO ({{ filteredRooms.length }})</h2>
     </div>
 
@@ -90,8 +107,8 @@ function handleBack() {
         </div>
         <div class="rooms-grid">
           <template v-if="filteredRooms.length > 0">
-            <button 
-              v-for="room in filteredRooms" 
+            <button
+              v-for="room in filteredRooms"
               :key="room.name"
               @click="handleJoinRoom(room)"
               class="room-card"
@@ -102,20 +119,34 @@ function handleBack() {
                 <div class="room-details">
                   {{ room.playerCount }} / {{ room.maxPlayers }} jugadors
                   <span v-if="room.isPrivate" class="private-badge">🔒</span>
-                  <span v-else-if="room.password" class="password-badge">🔑</span>
-                  <span class="mode-info">{{ room.difficulty }} · {{ room.theme }}</span>
+                  <span v-else-if="room.password" class="password-badge"
+                    >🔑</span
+                  >
+                  <span class="mode-info"
+                    >{{ room.difficulty }} · {{ room.theme }}</span
+                  >
                 </div>
               </div>
             </button>
           </template>
-          
+
           <div v-else class="no-rooms">
-            <div class="no-rooms-icon">{{ searchQuery.trim() ? '🔍' : '📝' }}</div>
+            <div class="no-rooms-icon">
+              {{ searchQuery.trim() ? "🔍" : "📝" }}
+            </div>
             <div class="no-rooms-text">
-              {{ searchQuery.trim() ? 'No s\'han trobat salas de texto amb aquest nom' : 'No hi ha salas de TEXTO creades' }}
+              {{
+                searchQuery.trim()
+                  ? "No s'han trobat salas de texto amb aquest nom"
+                  : "No hi ha salas de TEXTO creades"
+              }}
             </div>
             <div class="no-rooms-subtext">
-              {{ searchQuery.trim() ? 'Prova amb un altre nom o crea una nova sala' : 'Totes les salas creades apareixen aquí automàticament. Usa el buscador per filtrar per nom quan hi hagi moltes salas.' }}
+              {{
+                searchQuery.trim()
+                  ? "Prova amb un altre nom o crea una nova sala"
+                  : "Totes les salas creades apareixen aquí automàticament. Usa el buscador per filtrar per nom quan hi hagi moltes salas."
+              }}
             </div>
           </div>
         </div>
@@ -126,18 +157,22 @@ function handleBack() {
         <!-- Buscador de salas -->
         <div class="search-container">
           <div class="search-icon">🔍</div>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
+          <input
+            v-model="searchQuery"
+            type="text"
             placeholder="Buscar sala de texto..."
             class="search-input"
           />
         </div>
-        
+
         <button @click="handleCreateRoom" class="btn-action btn-creator">
           CREAR
         </button>
-        <button @click="handleJoinRoom(filteredRooms[0])" class="btn-action btn-unirse" :disabled="filteredRooms.length === 0">
+        <button
+          @click="handleJoinRoom(filteredRooms[0])"
+          class="btn-action btn-unirse"
+          :disabled="filteredRooms.length === 0"
+        >
           UNIRSE
         </button>
       </div>
@@ -158,7 +193,7 @@ function handleBack() {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  background: #0A192F;
+  background: #0a192f;
 }
 
 .header-section {
@@ -170,12 +205,12 @@ function handleBack() {
 
 .btn-back {
   background: rgba(26, 42, 74, 0.8);
-  border: 2px solid #00F0FF;
-  color: #00F0FF;
+  border: 2px solid #00f0ff;
+  color: #00f0ff;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-size: 1rem;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: "Share Tech Mono", monospace;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
@@ -183,16 +218,16 @@ function handleBack() {
 
 .btn-back:hover {
   background: rgba(240, 33, 185, 0.2);
-  border-color: #F021B9;
-  color: #F021B9;
+  border-color: #f021b9;
+  color: #f021b9;
   transform: translateX(-3px);
   box-shadow: 0 0 20px rgba(240, 33, 185, 0.4);
 }
 
 .page-title {
   font-size: 2.5rem;
-  color: #FF6600;
-  font-family: 'Share Tech Mono', monospace;
+  color: #ff6600;
+  font-family: "Share Tech Mono", monospace;
   font-weight: 700;
   margin: 0;
   text-shadow: 0 0 10px rgba(255, 102, 0, 0.8);
@@ -210,7 +245,7 @@ function handleBack() {
   flex: 1;
   background: rgba(26, 42, 74, 0.6);
   backdrop-filter: blur(10px);
-  border: 2px solid #FF6600;
+  border: 2px solid #ff6600;
   border-radius: 16px;
   padding: 2rem;
   display: flex;
@@ -219,8 +254,12 @@ function handleBack() {
 }
 
 .panel-header {
-  background: linear-gradient(135deg, rgba(255, 102, 0, 0.3), rgba(0, 240, 255, 0.3));
-  border: 2px solid #FF6600;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 102, 0, 0.3),
+    rgba(0, 240, 255, 0.3)
+  );
+  border: 2px solid #ff6600;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
@@ -230,9 +269,9 @@ function handleBack() {
 
 .panel-header h3 {
   margin: 0;
-  color: #00F0FF;
+  color: #00f0ff;
   font-size: 1.8rem;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: "Share Tech Mono", monospace;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -258,13 +297,13 @@ function handleBack() {
 }
 
 .rooms-grid::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #FF6600, #F021B9);
+  background: linear-gradient(180deg, #ff6600, #f021b9);
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
 }
 
 .rooms-grid::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #F021B9, #FF6600);
+  background: linear-gradient(180deg, #f021b9, #ff6600);
   box-shadow: 0 0 15px rgba(240, 33, 185, 0.5);
 }
 
@@ -279,12 +318,12 @@ function handleBack() {
   cursor: pointer;
   transition: all 0.3s ease;
   color: white;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
 }
 
 .room-card:hover {
   background: rgba(255, 102, 0, 0.2);
-  border-color: #FF6600;
+  border-color: #ff6600;
   transform: translateX(10px);
   box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
 }
@@ -307,7 +346,7 @@ function handleBack() {
   font-size: 1.3rem;
   font-weight: 600;
   word-break: break-word;
-  color: #FF6600;
+  color: #ff6600;
   text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
 }
 
@@ -345,7 +384,7 @@ function handleBack() {
   gap: 1rem;
   text-align: center;
   color: rgba(255, 102, 0, 0.6);
-  font-family: 'Share Tech Mono', monospace;
+  font-family: "Share Tech Mono", monospace;
   font-size: 1.2rem;
   padding: 3rem;
   height: 100%;
@@ -360,7 +399,7 @@ function handleBack() {
 .no-rooms-text {
   font-size: 1.3rem;
   font-weight: 500;
-  color: #FF6600;
+  color: #ff6600;
   text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
 }
 
@@ -391,7 +430,7 @@ function handleBack() {
 }
 
 .search-container:focus-within {
-  border-color: #FF6600;
+  border-color: #ff6600;
   box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
 }
 
@@ -406,9 +445,9 @@ function handleBack() {
   background: transparent;
   border: none;
   outline: none;
-  color: #FF6600;
+  color: #ff6600;
   font-size: 1rem;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   padding: 0.5rem;
 }
 
@@ -420,7 +459,7 @@ function handleBack() {
   padding: 1.5rem 2.5rem;
   font-size: 1.2rem;
   font-weight: 700;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: "Share Tech Mono", monospace;
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -431,9 +470,9 @@ function handleBack() {
 }
 
 .btn-creator {
-  background: linear-gradient(135deg, #FF6600, #F021B9);
-  color: #FFFFFF;
-  border: 2px solid #FF6600;
+  background: linear-gradient(135deg, #ff6600, #f021b9);
+  color: #ffffff;
+  border: 2px solid #ff6600;
 }
 
 .btn-creator:hover {
@@ -442,9 +481,9 @@ function handleBack() {
 }
 
 .btn-unirse {
-  background: linear-gradient(135deg, #F021B9, #00F0FF);
-  color: #0A192F;
-  border: 2px solid #F021B9;
+  background: linear-gradient(135deg, #f021b9, #00f0ff);
+  color: #0a192f;
+  border: 2px solid #f021b9;
 }
 
 .btn-unirse:hover:not(:disabled) {
@@ -462,17 +501,17 @@ function handleBack() {
   .content-wrapper {
     flex-direction: column;
   }
-  
+
   .action-buttons {
     flex-direction: row;
     justify-content: center;
     min-width: 100%;
   }
-  
+
   .room-card {
     padding: 1rem;
   }
-  
+
   .room-name {
     font-size: 1.1rem;
   }

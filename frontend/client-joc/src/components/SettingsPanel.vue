@@ -2,26 +2,26 @@
   <div v-if="isOpen" class="settings-overlay" @click.self="closeSettings">
     <div class="settings-panel">
       <div class="settings-header">
-        <h2 class="settings-title">CONFIGURACIÓ</h2>
+        <h2 class="settings-title">CONFIGURACIÓN</h2>
         <button @click="closeSettings" class="btn-close">✕</button>
       </div>
 
       <div class="settings-content">
         <!-- Nombre del jugador -->
         <div class="setting-group">
-          <label class="setting-label">NOM DEL JUGADOR</label>
+          <label class="setting-label">NOMBRE DEL JUGADOR</label>
           <input
             type="text"
             v-model="localPlayerName"
             class="setting-input"
             maxlength="20"
-            placeholder="El teu nom..."
+            placeholder="Tu nombre..."
           />
         </div>
 
         <!-- Selector de color -->
         <div class="setting-group">
-          <label class="setting-label">COLOR DE L'AVATAR</label>
+          <label class="setting-label">COLOR DEL AVATAR</label>
           <div class="color-selector">
             <div
               class="avatar-preview"
@@ -52,7 +52,7 @@
 
         <!-- Volumen -->
         <div class="setting-group">
-          <label class="setting-label">VOLUM</label>
+          <label class="setting-label">VOLUMEN</label>
           <div class="volume-container">
             <input
               type="range"
@@ -64,11 +64,25 @@
             <span class="volume-value">{{ localVolume }}%</span>
           </div>
         </div>
+
+        <!-- Música de fons -->
+        <div class="setting-group">
+          <label class="setting-label">MÚSICA DE FONDO</label>
+          <div class="music-toggle">
+            <label class="switch">
+              <input type="checkbox" v-model="localMusicEnabled" />
+              <span class="slider"></span>
+            </label>
+            <span class="music-state">{{
+              localMusicEnabled ? "Activada" : "Desactivada"
+            }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="settings-footer">
         <button @click="saveSettings" class="btn-save">GUARDAR</button>
-        <button @click="closeSettings" class="btn-cancel">CANCEL·LAR</button>
+        <button @click="closeSettings" class="btn-cancel">CANCELAR</button>
       </div>
     </div>
   </div>
@@ -82,6 +96,7 @@ const props = defineProps({
   playerName: String,
   playerColor: String,
   volume: Number,
+  musicEnabled: Boolean,
 });
 
 const emit = defineEmits(["close", "save"]);
@@ -89,6 +104,7 @@ const emit = defineEmits(["close", "save"]);
 const localPlayerName = ref(props.playerName || "");
 const localPlayerColor = ref(props.playerColor || "#F021B9");
 const localVolume = ref(props.volume || 50);
+const localMusicEnabled = ref(props.musicEnabled ?? true);
 
 const presetColors = [
   "#F021B9",
@@ -124,11 +140,19 @@ watch(
   }
 );
 
+watch(
+  () => props.musicEnabled,
+  (nv) => {
+    localMusicEnabled.value = nv ?? true;
+  }
+);
+
 const saveSettings = () => {
   emit("save", {
     playerName: localPlayerName.value.trim(),
     playerColor: localPlayerColor.value,
     volume: localVolume.value,
+    musicEnabled: localMusicEnabled.value,
   });
 };
 
@@ -366,6 +390,61 @@ const closeSettings = () => {
   font-family: "Fira Code", monospace;
   font-weight: 600;
   text-align: right;
+}
+
+/* Music toggle switch */
+.music-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.music-state {
+  font-family: "Fira Code", monospace;
+  color: #00f0ff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+.switch input {
+  display: none;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 240, 255, 0.25);
+  transition: 0.35s;
+  border-radius: 34px;
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  top: 2px;
+  background: linear-gradient(135deg, #f021b9, #ff00ff);
+  border-radius: 50%;
+  transition: 0.35s;
+  box-shadow: 0 0 10px rgba(240, 33, 185, 0.6);
+}
+.switch input:checked + .slider {
+  background: rgba(240, 33, 185, 0.35);
+  border-color: #f021b9;
+  box-shadow: 0 0 14px rgba(240, 33, 185, 0.6);
+}
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
 }
 
 .settings-footer {

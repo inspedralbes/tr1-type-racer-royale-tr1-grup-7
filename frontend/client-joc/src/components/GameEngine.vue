@@ -1,13 +1,46 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 
 // --- BANC DE PARAULES ---
 const BANC_DE_PARAULES = [
-  'vue', 'react', 'angular', 'javascript', 'typescript', 'component', 'directiva',
-  'template', 'props', 'computed', 'watch', 'ref', 'reactive', 'pinia', 'store',
-  'router', 'build', 'vite', 'node', 'express', 'socket', 'await', 'async',
-  'promise', 'fetch', 'axios', 'tailwind', 'css', 'html', 'flexbox', 'grid',
-  'array', 'objecte', 'funcio', 'variable', 'constant', 'bucle', 'condicional'
+  "vue",
+  "react",
+  "angular",
+  "javascript",
+  "typescript",
+  "component",
+  "directiva",
+  "template",
+  "props",
+  "computed",
+  "watch",
+  "ref",
+  "reactive",
+  "pinia",
+  "store",
+  "router",
+  "build",
+  "vite",
+  "node",
+  "express",
+  "socket",
+  "await",
+  "async",
+  "promise",
+  "fetch",
+  "axios",
+  "tailwind",
+  "css",
+  "html",
+  "flexbox",
+  "grid",
+  "array",
+  "objecte",
+  "funcio",
+  "variable",
+  "constant",
+  "bucle",
+  "condicional",
 ];
 
 function barrejarArray(array) {
@@ -24,21 +57,21 @@ const crearEstatInicial = () => {
   const paraulesDelJoc = paraulesAleatories.map((paraula, index) => ({
     id: index + 1,
     text: paraula,
-    estat: 'pendent',
+    estat: "pendent",
     // Ja no fem servir 'errors' per paraula, però el mantenim per si es volgués
-    errors: 0, 
+    errors: 0,
   }));
 
   return {
     paraules: paraulesDelJoc,
     indexParaulaActiva: 0,
-    textEntrat: '',
+    textEntrat: "",
     estadistiques: [],
   };
 };
 
 const estatDelJoc = ref(crearEstatInicial());
-const estatPartida = ref('jugant');
+const estatPartida = ref("jugant");
 let tempsIniciParaula = 0;
 const gameInputRef = ref(null);
 const isShaking = ref(false);
@@ -52,7 +85,10 @@ const errorsTotals = ref(0);
 const lletraActivaIncorrecta = ref(false);
 
 const paraulaActiva = computed(() => {
-  if (estatPartida.value === 'jugant' && estatDelJoc.value.indexParaulaActiva < estatDelJoc.value.paraules.length) {
+  if (
+    estatPartida.value === "jugant" &&
+    estatDelJoc.value.indexParaulaActiva < estatDelJoc.value.paraules.length
+  ) {
     return estatDelJoc.value.paraules[estatDelJoc.value.indexParaulaActiva];
   }
   return null;
@@ -72,7 +108,7 @@ function activarErrorShake() {
 // --- LÒGICA DE TECLEIG REESCRITA (Pas 3) ---
 function handleGameKeydown(event) {
   // 1. Gestionar tecles especials (Esborrar)
-  if (event.key === 'Backspace') {
+  if (event.key === "Backspace") {
     event.preventDefault();
     lletraActivaIncorrecta.value = false; // Esborrem l'error visual
     if (estatDelJoc.value.textEntrat.length > 0) {
@@ -90,7 +126,7 @@ function handleGameKeydown(event) {
   event.preventDefault();
 
   // 4. Comprovar si el joc està actiu
-  if (estatPartida.value !== 'jugant' || !paraulaActiva.value) return;
+  if (estatPartida.value !== "jugant" || !paraulaActiva.value) return;
 
   const lletraPremuda = event.key;
   const paraulaText = paraulaActiva.value.text;
@@ -100,22 +136,28 @@ function handleGameKeydown(event) {
   if (longEntrada >= paraulaText.length) {
     return;
   }
-  
+
   // 6. Agafem la lletra que tocaria escriure
   const lletraCorrecta = paraulaText[longEntrada];
 
   // 7. Comprovem si és la lletra correcta
   if (lletraPremuda === lletraCorrecta) {
     // És CORRECTA!
-    
+
     // Iniciem cronòmetres
     if (longEntrada === 0 && tempsIniciParaula === 0) {
       iniciarCronometreParaula();
     }
-    if (estatDelJoc.value.indexParaulaActiva === 0 && longEntrada === 0 && !cronometreGlobal) {
+    if (
+      estatDelJoc.value.indexParaulaActiva === 0 &&
+      longEntrada === 0 &&
+      !cronometreGlobal
+    ) {
       tempsIniciPartida = Date.now();
       cronometreGlobal = setInterval(() => {
-        tempsTranscorregut.value = Math.floor((Date.now() - tempsIniciPartida) / 1000);
+        tempsTranscorregut.value = Math.floor(
+          (Date.now() - tempsIniciPartida) / 1000
+        );
       }, 1000);
     }
 
@@ -131,15 +173,18 @@ function handleGameKeydown(event) {
         paraula: paraulaText,
         temps: tempsTrigat,
       });
-      paraulaActiva.value.estat = 'completada';
+      paraulaActiva.value.estat = "completada";
       estatDelJoc.value.indexParaulaActiva++;
-      estatDelJoc.value.textEntrat = '';
+      estatDelJoc.value.textEntrat = "";
       tempsIniciParaula = 0;
       lletraActivaIncorrecta.value = false; // Assegurem que no hi ha error visual
 
       // Comprovem si hem acabat el joc
-      if (estatDelJoc.value.indexParaulaActiva >= estatDelJoc.value.paraules.length) {
-        estatPartida.value = 'acabat';
+      if (
+        estatDelJoc.value.indexParaulaActiva >=
+        estatDelJoc.value.paraules.length
+      ) {
+        estatPartida.value = "acabat";
         clearInterval(cronometreGlobal);
         cronometreGlobal = null;
       }
@@ -161,53 +206,55 @@ function getClasseLletra(indexLletra, lletra) {
   // --- NOU: Comprovació d'error actiu ---
   // Si és la lletra on estem ara, i està marcada com a incorrecta
   if (indexLletra === longEntrada && lletraActivaIncorrecta.value) {
-    return 'lletra-incorrecta-activa';
+    return "lletra-incorrecta-activa";
   }
-  
+
   // Si la lletra ja s'ha escrit (i per tant, és correcta)
   if (indexLletra < longEntrada) {
-    return 'lletra-correcta';
+    return "lletra-correcta";
   }
-  
+
   // Si la lletra encara no s'ha tocat
-  return 'lletra-pendent';
+  return "lletra-pendent";
 }
 
-
 const filesDelTeclat = ref([
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["Z", "X", "C", "V", "B", "N", "M"],
 ]);
-const teclaPremuda = ref('');
+const teclaPremuda = ref("");
 
 function handleGlobalKeydown(event) {
   if (gameInputRef.value && document.activeElement !== gameInputRef.value) {
     gameInputRef.value.focus();
   }
-  
+
   if (event.key.length > 1) return;
   const tecla = event.key.toUpperCase();
   teclaPremuda.value = tecla;
   setTimeout(() => {
-    teclaPremuda.value = '';
+    teclaPremuda.value = "";
   }, 120);
 }
 
 onMounted(() => {
-  window.addEventListener('keyup', handleGlobalKeydown);
+  window.addEventListener("keyup", handleGlobalKeydown);
   if (gameInputRef.value) {
     gameInputRef.value.focus();
   }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keyup', handleGlobalKeydown);
+  window.removeEventListener("keyup", handleGlobalKeydown);
   clearInterval(cronometreGlobal);
 });
 
 const totalTemps = computed(() => {
-  return estatDelJoc.value.estadistiques.reduce((acc, curr) => acc + curr.temps, 0);
+  return estatDelJoc.value.estadistiques.reduce(
+    (acc, curr) => acc + curr.temps,
+    0
+  );
 });
 // (Ja no necessitem totalErrors computat, fem servir errorsTotals directament)
 
@@ -218,11 +265,11 @@ function reiniciarJoc() {
   tempsIniciPartida = 0;
   lletraActivaIncorrecta.value = false;
   errorsTotals.value = 0; // <-- NOU: Reiniciem el comptador general
-  
+
   estatDelJoc.value = crearEstatInicial();
   tempsIniciParaula = 0;
-  estatPartida.value = 'jugant';
-  
+  estatPartida.value = "jugant";
+
   nextTick(() => {
     if (gameInputRef.value) {
       gameInputRef.value.focus();
@@ -235,7 +282,6 @@ function reiniciarJoc() {
   <div class="game-engine">
     <Transition name="fade" mode="out-in">
       <div v-if="estatPartida === 'jugant'" class="joc-actiu" key="jugant">
-        
         <div class="live-stats-container">
           <div class="stat-item">
             <span class="stat-label">Temps</span>
@@ -247,11 +293,8 @@ function reiniciarJoc() {
             <span class="stat-value error">{{ errorsTotals }}</span>
           </div>
         </div>
-        
-        <div 
-          class="paraules-container"
-          :class="{ 'error-shake': isShaking }"
-        >
+
+        <div class="paraules-container" :class="{ 'error-shake': isShaking }">
           <div
             v-for="(paraula, index) in estatDelJoc.paraules"
             :key="paraula.id"
@@ -281,9 +324,9 @@ function reiniciarJoc() {
           ref="gameInputRef"
           type="text"
           class="text-input"
-          :value="estatDelJoc.textEntrat" 
+          :value="estatDelJoc.textEntrat"
           @keydown="handleGameKeydown"
-          placeholder="Comença a escriure..."
+          placeholder="Empieza a escribir..."
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
@@ -292,20 +335,20 @@ function reiniciarJoc() {
       </div>
 
       <div v-else class="resultats-container" key="acabat">
-        <h2>🎉 Joc Acabat! 🎉</h2>
+        <h2>🎉 ¡Juego Terminado! 🎉</h2>
         <div class="resultats-metrics">
           <div>
-            <span class="metric-label">Temps Total</span>
+            <span class="metric-label">Tiempo Total</span>
             <span class="metric-value">{{ tempsTranscorregut }}s</span>
           </div>
           <div>
-            <span class="metric-label">Total Errors</span>
+            <span class="metric-label">Total Errores</span>
             <!-- NOU: Mostrem el comptador general -->
             <span class="metric-value error">{{ errorsTotals }}</span>
           </div>
         </div>
         <button @click="reiniciarJoc" class="btn-reiniciar">
-          Tornar a començar
+          Volver a empezar
         </button>
       </div>
     </Transition>
@@ -383,7 +426,7 @@ function reiniciarJoc() {
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   color: #f0f0f0;
 }
 .stat-value.error {
@@ -412,15 +455,24 @@ function reiniciarJoc() {
   animation: shake 0.4s ease-in-out;
 }
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
 }
 
 /* Paraules individuals */
 .paraula {
   font-size: 1.75rem;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   color: #666;
@@ -464,7 +516,7 @@ function reiniciarJoc() {
   width: 100%;
   padding: 1rem;
   font-size: 1.75rem;
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   text-align: center;
   background-color: transparent;
   color: white; /* El text escrit serà blanc */
@@ -499,7 +551,7 @@ function reiniciarJoc() {
 }
 
 .tecla {
-  font-family: 'Fira Code', monospace;
+  font-family: "Fira Code", monospace;
   font-weight: 600;
   font-size: 1rem;
   width: 50px;
@@ -518,8 +570,7 @@ function reiniciarJoc() {
 .tecla-premuda,
 .tecla:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #111,
-              0 0 20px #00ff9a;
+  box-shadow: 0 2px 0 #111, 0 0 20px #00ff9a;
   background: #00ff9a;
   color: #111;
 }
@@ -583,4 +634,3 @@ function reiniciarJoc() {
   box-shadow: 0 6px 20px rgba(66, 184, 131, 0.3);
 }
 </style>
-

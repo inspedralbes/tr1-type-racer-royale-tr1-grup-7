@@ -29,6 +29,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  gameMode: {
+    type: String,
+    default: "texto",
+  },
 });
 
 const emit = defineEmits(["startGame", "leaveRoom", "kickPlayer"]);
@@ -49,7 +53,7 @@ function handleKickPlayer(playerId) {
 // Mapeo de valores a texto legible
 const difficultyText = computed(() => {
   const map = {
-    facil: "Fàcil",
+    facil: "Fácil",
     normal: "Normal",
     dificil: "Difícil",
   };
@@ -58,20 +62,20 @@ const difficultyText = computed(() => {
 
 const themeText = computed(() => {
   const map = {
-    aleatori: "Aleatori",
-    animals: "Animals",
-    "pel·licules": "Pel·lícules",
-    programacio: "Programació",
-    esports: "Esports",
+    aleatori: "Aleatorio",
+    animals: "Animales",
+    "pel·licules": "Películas",
+    programacio: "Programación",
+    esports: "Deportes",
   };
-  return map[props.roomConfig?.theme] || "Aleatori";
+  return map[props.roomConfig?.theme] || "Aleatorio";
 });
 </script>
 
 <template>
   <div class="lobby-container">
     <div class="header-section">
-      <button @click="handleLeaveRoom" class="btn-back">← Sortir</button>
+      <button @click="handleLeaveRoom" class="btn-back">← Salir</button>
       <h2 class="room-name-title">{{ roomName }}</h2>
     </div>
 
@@ -88,25 +92,25 @@ const themeText = computed(() => {
               >{{ players.length }}/{{
                 roomConfig?.maxPlayers || 4
               }}
-              jugadors</span
+              jugadores</span
             >
           </div>
 
           <div class="config-row">
             <span class="config-icon">⏱️</span>
             <span class="config-text"
-              >{{ roomConfig?.timeLimit || 3 }} minuts</span
+              >{{ roomConfig?.timeLimit || 3 }} minutos</span
             >
           </div>
 
-          <div class="config-row">
+          <div class="config-row" v-if="gameMode === 'texto'">
             <span class="config-icon">🔄</span>
             <span class="config-text"
-              >{{ roomConfig?.numRounds || 3 }} rondes</span
+              >{{ roomConfig?.numRounds || 3 }} rondas</span
             >
           </div>
 
-          <div class="config-row">
+          <div class="config-row" v-if="gameMode === 'texto'">
             <span class="config-icon">⚡</span>
             <span class="config-text">{{ difficultyText }}</span>
           </div>
@@ -157,7 +161,7 @@ const themeText = computed(() => {
               class="player-item player-empty"
             >
               <span class="player-number">{{ players.length + i }}</span>
-              <span class="player-name">Esperant...</span>
+              <span class="player-name">Esperando...</span>
             </div>
           </div>
 
@@ -169,17 +173,17 @@ const themeText = computed(() => {
             class="btn-start"
             :class="{ 'btn-disabled': players.length < 2 }"
           >
-            COMENÇAR PARTIDA
+            COMENZAR PARTIDA
           </button>
           <div v-else class="waiting-text">
-            Esperant que l'administrador comenci...
+            Esperando que el administrador comience...
           </div>
         </div>
 
         <!-- Panel derecho: Botones laterales -->
         <div class="side-actions">
           <button @click="handleLeaveRoom" class="btn-action btn-sortir">
-            SORTIR
+            SALIR
           </button>
         </div>
       </div>
@@ -189,19 +193,19 @@ const themeText = computed(() => {
 
 <style scoped>
 .lobby-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  padding: 2vh 2vw;
   display: flex;
   flex-direction: column;
-  gap: 2vh;
+  flex: 1; /* Ocupa el espacio restante bajo el título */
+  height: calc(
+    100vh - clamp(60px, 10vh, 120px)
+  ); /* Ajuste dinámico restando área del título/header */
+  padding: clamp(1.2vh, 2vh, 2.4vh) clamp(1.2vw, 2vw, 2.4vw)
+    clamp(2vh, 3vh, 3.2vh) clamp(1.2vw, 2vw, 2.4vw);
+  gap: clamp(1.2vh, 2vh, 2.4vh);
   background: #0a192f;
-  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden; /* Evitar scroll interno según petición */
 }
 
 .lobby-container::before {
@@ -269,15 +273,16 @@ const themeText = computed(() => {
 .content-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 2vh;
+  gap: clamp(1.2vh, 2vh, 2.4vh);
   flex: 1;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Empieza bajo el header sin centrar verticalmente */
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 .panel-title {
@@ -307,11 +312,12 @@ const themeText = computed(() => {
 /* Sección inferior con jugadores y botones */
 .bottom-section {
   display: flex;
-  gap: 2vw;
+  gap: clamp(1.5vw, 2vw, 2.5vw);
   align-items: stretch;
   justify-content: center;
   width: 100%;
   flex: 1;
+  overflow: hidden; /* Evitar que salga por abajo */
 }
 
 /* Panel de jugadores */
@@ -320,21 +326,23 @@ const themeText = computed(() => {
   backdrop-filter: blur(10px);
   border: 2px solid #f021b9;
   border-radius: 16px;
-  padding: 2vh 3vw;
+  padding: clamp(1.4vh, 2vh, 2.2vh) clamp(2vw, 3vw, 3.2vw);
   box-shadow: 0 0 30px rgba(240, 33, 185, 0.3),
     inset 0 0 20px rgba(240, 33, 185, 0.05);
   flex: 1;
-  max-width: 700px;
+  max-width: 680px;
   display: flex;
   flex-direction: column;
-  gap: 2vh;
+  gap: clamp(1.2vh, 1.6vh, 2vh);
+  overflow: hidden; /* contener lista */
 }
 
 .players-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5vh;
+  gap: clamp(0.8vh, 1.2vh, 1.5vh);
   flex: 1;
+  overflow-y: auto; /* scroll interno solo aquí si hace falta */
 }
 
 .player-item {
