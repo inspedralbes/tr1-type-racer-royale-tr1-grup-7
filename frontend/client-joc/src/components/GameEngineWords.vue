@@ -2312,25 +2312,6 @@ const getPlayerColor = (index) => {
     max-width: 90vw;
   }
 }
-  bottom: 1rem;
-  right: 1rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-family: "Share Tech Mono", monospace;
-  background: rgba(10, 25, 47, 0.9);
-  color: #00f0ff;
-  border: 2px solid #00f0ff;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  opacity: 0.7;
-  z-index: 100;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.1rem;
-}
 
 .btn-back:hover {
   background: rgba(240, 33, 185, 0.2);
@@ -2710,9 +2691,6 @@ const getPlayerColor = (index) => {
     min-width: 180px;
   }
 
-  .btn-back {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.7rem;
-  }
+
 }
 </style>

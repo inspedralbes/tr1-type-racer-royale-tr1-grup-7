@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
-import GameEngine from "./components/GameEngine.vue";
 import GameEngineWords from "./components/GameEngineWords.vue";
 import GameView from "./components/GameView.vue";
 import RoomListWords from "./components/RoomListWords.vue";
