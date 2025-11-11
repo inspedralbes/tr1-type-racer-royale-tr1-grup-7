@@ -3,8 +3,10 @@ import { ref, onMounted, watch, computed } from "vue";
 import GameEngine from "./components/GameEngine.vue";
 import GameEngineWords from "./components/GameEngineWords.vue";
 import GameView from "./components/GameView.vue";
-import RoomList from "./components/RoomList.vue";
-import CreateRoom from "./components/CreateRoom.vue";
+import RoomListWords from "./components/RoomListWords.vue";
+import CreateRoomWords from "./components/CreateRoomWords.vue";
+import RoomListText from "./components/RoomListText.vue";
+import CreateRoomText from "./components/CreateRoomText.vue";
 import LobbyRoom from "./components/LobbyRoom.vue";
 import WelcomeScreen from "./components/WelcomeScreen.vue";
 import GameModeSelect from "./components/GameModeSelect.vue";
@@ -435,26 +437,51 @@ onMounted(() => {
     />
 
     <!-- VISTA 3: LLISTA DE SALES -->
-    <RoomList
-      v-else-if="vistaActual === 'roomList'"
+    <!-- Lista de salas para PALABRAS -->
+    <RoomListWords
+      v-else-if="vistaActual === 'roomList' && modoJuego === 'palabras'"
       :rooms="activeRooms"
       :player-name="nomJugador"
       @join-room="joinRoom"
       @notify="handleNotify"
       @create-room="goToCreateRoom"
       @back="backToRoomAction"
-      key="roomList"
+      key="roomListWords"
+    />
+    
+    <!-- Lista de salas para TEXTO -->
+    <RoomListText
+      v-else-if="vistaActual === 'roomList' && modoJuego === 'texto'"
+      :rooms="activeRooms"
+      :player-name="nomJugador"
+      @join-room="joinRoom"
+      @notify="handleNotify"
+      @create-room="goToCreateRoom"
+      @back="backToRoomAction"
+      key="roomListText"
     />
 
     <!-- VISTA 4: CREAR SALA -->
-    <CreateRoom
-      v-else-if="vistaActual === 'createRoom'"
+    <!-- Crear sala para PALABRAS -->
+    <CreateRoomWords
+      v-else-if="vistaActual === 'createRoom' && modoJuego === 'palabras'"
       :player-name="nomJugador"
       @create-room="createRoom"
       @notify="handleNotify"
       @go-to-room-list="vistaActual = 'roomList'"
       @back="backToRoomAction"
-      key="createRoom"
+      key="createRoomWords"
+    />
+    
+    <!-- Crear sala para TEXTO -->
+    <CreateRoomText
+      v-else-if="vistaActual === 'createRoom' && modoJuego === 'texto'"
+      :player-name="nomJugador"
+      @create-room="createRoom"
+      @notify="handleNotify"
+      @go-to-room-list="vistaActual = 'roomList'"
+      @back="backToRoomAction"
+      key="createRoomText"
     />
 
     <!-- VISTA 5: LOBBY -->

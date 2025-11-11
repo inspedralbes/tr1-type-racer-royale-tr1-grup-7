@@ -1721,9 +1721,9 @@ const getPlayerColor = (index) => {
   );
   color: #e0e0e0;
   overflow: hidden;
-  padding: 0.75rem;
+  padding: 1vh 1vw;
   box-sizing: border-box;
-  gap: 0.75rem;
+  gap: 1vh;
   font-family: "Share Tech Mono", monospace;
 }
 
@@ -1732,61 +1732,64 @@ const getPlayerColor = (index) => {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: space-around;
+  gap: 2vw;
   background: #1a2a4a;
   backdrop-filter: blur(10px);
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  border: 2px solid #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 10px rgba(0, 240, 255, 0.05);
+  padding: 1.5vh 2vw;
+  border-radius: 1vw;
+  border: 0.2vw solid #00f0ff;
+  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.3),
+    inset 0 0 1vw rgba(0, 240, 255, 0.05);
+  height: 10vh;
 }
 
 .time-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
+  gap: 0.5vh;
+  flex: 1;
+  max-width: 20%;
 }
 
 .time-label {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 1.2vw, 1rem);
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 0.1em;
   font-family: "Share Tech Mono", monospace;
 }
 
 .time-value {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.5vw, 2rem);
   font-weight: 700;
   color: #f021b9;
-  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
+  text-shadow: 0 0 1vw #f021b9, 0 0 2vw #f021b9;
   font-family: "Fira Code", monospace;
 }
 
 .words-section {
-  flex: 1;
+  flex: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5vh;
   align-items: center;
 }
 
 .words-label {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 1.2vw, 1rem);
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 0.1em;
   font-family: "Share Tech Mono", monospace;
 }
 
 .words-value {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.5vw, 2rem);
   font-weight: 700;
   color: #39ff14;
-  text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+  text-shadow: 0 0 1vw #39ff14, 0 0 2vw #39ff14;
   font-family: "Fira Code", monospace;
 }
 
@@ -1794,23 +1797,24 @@ const getPlayerColor = (index) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
+  gap: 0.5vh;
+  flex: 1;
+  max-width: 20%;
 }
 
 .errors-label {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 1.2vw, 1rem);
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 0.1em;
   font-family: "Share Tech Mono", monospace;
 }
 
 .errors-value {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.5vw, 2rem);
   font-weight: 700;
   color: #ff0000;
-  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+  text-shadow: 0 0 1vw #ff0000, 0 0 2vw #ff0000;
   font-family: "Fira Code", monospace;
 }
 
@@ -1818,38 +1822,207 @@ const getPlayerColor = (index) => {
 .game-content {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
   min-height: 0;
   overflow: hidden;
 }
 
-.word-display {
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: 3rem 2rem;
-  border-radius: 10px;
-  border: 2px solid #00f0ff;
-  flex: 1;
+.game-content-wrapper {
+  display: flex;
+  width: 100%;
+  gap: 2vw;
+  align-items: stretch;
+  height: 100%;
+}
+
+/* === PANEL DE JUGADORES === */
+.players-panel {
+  flex: 0 0 25vw;
+  min-width: 300px;
+  max-width: 400px;
+  background: rgba(26, 42, 74, 0.85);
+  backdrop-filter: blur(15px);
+  border: 0.3vw solid #39ff14;
+  border-radius: 2vw;
+  padding: 2vh 1.5vw;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
+  box-shadow: 0 0 3vw rgba(57, 255, 20, 0.5),
+    inset 0 0 2vw rgba(57, 255, 20, 0.1);
   overflow: hidden;
+}
+
+.panel-title {
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-weight: 800;
+  color: #39ff14;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin: 0;
+  text-shadow: 0 0 2vw #39ff14, 0 0 3vw #39ff14;
+  font-family: "Share Tech Mono", monospace;
+  padding-bottom: 1vh;
+  border-bottom: 0.2vw solid rgba(57, 255, 20, 0.3);
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.player-card {
+  background: rgba(10, 25, 47, 0.7);
+  border: 0.2vw solid rgba(57, 255, 20, 0.4);
+  border-radius: 1.5vw;
+  padding: 2vh 1.5vw;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 1.5vw rgba(57, 255, 20, 0.2);
+}
+
+.player-card.is-typing {
+  border-color: #f021b9;
+  box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
+  animation: typingPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes typingPulse {
+  0% {
+    box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 35px rgba(240, 33, 185, 0.8);
+  }
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5vw;
+  margin-bottom: 1.5vh;
+}
+
+.player-avatar {
+  width: clamp(50px, 4vw, 70px);
+  height: clamp(50px, 4vw, 70px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 1vw rgba(0, 0, 0, 0.8);
+  border: 0.3vw solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 2vw rgba(0, 0, 0, 0.3);
+  font-family: "Fira Code", monospace;
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  font-weight: 700;
+  color: #00f0ff;
+  text-shadow: 0 0 1vw #00f0ff;
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  margin-bottom: 0.8vh;
+  font-family: "Fira Code", monospace;
+}
+
+.player-streak-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  animation: flameFlicker 1s ease-in-out infinite alternate;
+}
+
+.streak-number {
+  font-size: clamp(0.8rem, 1.3vw, 0.9rem);
+  font-weight: 800;
+  color: #ffd700;
+  text-shadow: 0 0 0.8vw #ff6600;
+}
+
+.player-stats {
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  color: #39ff14;
+  font-weight: 600;
+  text-shadow: 0 0 0.8vw rgba(57, 255, 20, 0.6);
+  font-family: "Share Tech Mono", monospace;
+}
+
+.player-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-family: "Share Tech Mono", monospace;
+}
+
+.player-words {
+  color: #00f0ff;
+  font-weight: 600;
+  text-shadow: 0 0 0.8vw rgba(0, 240, 255, 0.6);
+}
+
+.player-errors {
+  color: #ff6666;
+  font-weight: 600;
+  text-shadow: 0 0 0.8vw rgba(255, 102, 102, 0.6);
+}
+
+/* === ÁREA DE TEXTO PRINCIPAL === */
+.text-area-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3vh;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.word-display {
+  background: rgba(26, 42, 74, 0.85);
+  backdrop-filter: blur(15px);
+  padding: 4vh 3vw;
+  border-radius: 2.5vw;
+  border: 0.3vw solid #00f0ff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 15px rgba(0, 240, 255, 0.05);
-  gap: 2rem;
+  max-width: 60vw;
+  box-shadow: 0 0 4vw rgba(0, 240, 255, 0.4),
+    inset 0 0 3vw rgba(0, 240, 255, 0.1);
+  gap: 4vh;
+  min-height: 35vh;
 }
 
 .current-word {
-  font-size: 4rem;
-  font-weight: 700;
-  color: #e0e0e0;
-  letter-spacing: 0.5rem;
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.3em;
   font-family: "Fira Code", monospace;
   text-align: center;
   line-height: 1.2;
+  text-shadow: 0 0 2vw rgba(255, 255, 255, 0.3);
+  min-height: 15vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .current-word span {
@@ -1858,12 +2031,17 @@ const getPlayerColor = (index) => {
 }
 
 .word-counter {
-  font-size: 1.2rem;
-  color: #00f0ff;
+  font-size: clamp(1rem, 2.2vw, 1.6rem);
+  color: #39ff14;
   text-transform: uppercase;
-  letter-spacing: 0.2rem;
+  letter-spacing: 0.2em;
   font-family: "Share Tech Mono", monospace;
-  text-shadow: 0 0 10px #00f0ff;
+  font-weight: 700;
+  text-shadow: 0 0 1.5vw #39ff14, 0 0 3vw #39ff14;
+  background: rgba(57, 255, 20, 0.1);
+  padding: 1.5vh 2vw;
+  border-radius: 1.5vw;
+  border: 0.2vw solid rgba(57, 255, 20, 0.3);
 }
 
 .input-area {
@@ -1874,31 +2052,34 @@ const getPlayerColor = (index) => {
 }
 
 .typing-input {
-  width: 900px;
-  max-width: 100%;
-  padding: 1rem 0;
-  font-size: 1.2rem;
+  width: 100%;
+  max-width: 50vw;
+  min-width: 300px;
+  padding: 2.5vh 3vw;
+  font-size: clamp(1rem, 2.2vw, 1.6rem);
   font-family: "Fira Code", monospace;
-  background: rgba(10, 25, 47, 0.9);
+  font-weight: 600;
+  background: rgba(10, 25, 47, 0.95);
   color: #00f0ff;
-  border: 2px solid #00f0ff;
-  border-radius: 10px;
+  border: 0.3vw solid #00f0ff;
+  border-radius: 2vw;
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
   margin: 0 auto;
   box-sizing: border-box;
   text-align: center;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 2.5vw rgba(0, 240, 255, 0.4),
+    inset 0 0 2vw rgba(0, 240, 255, 0.1);
+  letter-spacing: 0.1em;
 }
 
 .typing-input:focus {
   border-color: #f021b9;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.6),
-    inset 0 0 15px rgba(240, 33, 185, 0.1);
+  box-shadow: 0 0 4vw rgba(240, 33, 185, 0.8),
+    inset 0 0 2.5vw rgba(240, 33, 185, 0.15);
   background: rgba(10, 25, 47, 1);
   color: #f021b9;
+  transform: translateY(-0.3vh);
 }
 
 .typing-input::placeholder {
@@ -1914,114 +2095,223 @@ const getPlayerColor = (index) => {
   justify-content: center;
   position: relative;
   width: 100%;
+  height: 25vh;
 }
 
 .keyboard-visual {
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: 1.25rem 0;
-  border-radius: 12px;
-  border: 2px solid #00f0ff;
+  background: rgba(26, 42, 74, 0.9);
+  backdrop-filter: blur(15px);
+  padding: 2vh 2.5vw;
+  border-radius: 2.5vw;
+  border: 0.3vw solid #f021b9;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-width: 900px;
+  gap: 1.5vh;
+  max-width: 80vw;
   width: 100%;
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4),
-    inset 0 0 15px rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 4vw rgba(240, 33, 185, 0.5),
+    inset 0 0 2.5vw rgba(240, 33, 185, 0.1);
   margin: 0 auto;
   box-sizing: border-box;
+  height: 100%;
 }
 
 .keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 1vw;
+  flex: 1;
 }
 
 .key {
-  min-width: 50px;
-  height: 50px;
+  min-width: clamp(50px, 5vw, 80px);
+  height: clamp(50px, 4vh, 70px);
+  flex: 1;
+  max-width: 6vw;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
-  border: 2px solid #00f0ff;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  border: 0.3vw solid #00f0ff;
+  border-radius: 1.5vw;
+  font-size: clamp(1rem, 2vw, 1.4rem);
+  font-weight: 700;
   color: #00f0ff;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   cursor: default;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.4),
+    inset 0 0 1vw rgba(0, 240, 255, 0.1);
   font-family: "Share Tech Mono", monospace;
+  position: relative;
 }
 
 .key:hover {
   background: linear-gradient(145deg, #1f3557, #142135);
   border-color: #f021b9;
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
+  transform: translateY(-0.5vh);
+  box-shadow: 0 0 3vw rgba(240, 33, 185, 0.8);
   color: #f021b9;
 }
 
 /* Tecla presionada (efecto cuando el usuario pulsa una tecla física) */
 .key.pressed {
-  transform: translateY(2px);
+  transform: translateY(0.4vh) scale(0.95);
   background: linear-gradient(180deg, #f021b9, #ff00ff);
   color: #ffffff;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.8) inset,
-    0 0 20px rgba(240, 33, 185, 0.6);
-  border-color: #f021b9;
+  box-shadow: 0 0 4vw rgba(240, 33, 185, 1) inset,
+    0 0 3.5vw rgba(240, 33, 185, 0.9);
+  border-color: #ffffff;
+  text-shadow: 0 0 1vw #ffffff;
 }
 
 .key.wide {
-  flex: 1 1 auto;
-  min-width: 200px;
-  max-width: 400px;
+  flex: 3;
+  min-width: clamp(200px, 20vw, 400px);
+  max-width: none;
 }
 .key.backspace {
-  min-width: 100px;
-  font-size: 1.2rem;
+  flex: 1.5;
+  min-width: clamp(100px, 10vw, 160px);
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+}
+
+/* Indicadores de otros jugadores en las teclas */
+.key-player-indicator {
+  position: absolute;
+  top: -1vh;
+  right: -1vw;
+  width: clamp(15px, 2vw, 25px);
+  height: clamp(15px, 2vw, 25px);
+  border-radius: 50%;
+  border: 0.2vw solid #ffffff;
+  box-shadow: 0 0 1.5vw rgba(0, 0, 0, 0.8);
+  z-index: 1;
 }
 
 /* Estados de los caracteres del texto */
 .text-to-type span {
   display: inline;
-  transition: color 0.15s ease;
+  transition: all 0.3s ease;
 }
 
-/* Correcto: color verde neón */
+.current-word span {
+  display: inline-block;
+  transition: all 0.3s ease;
+  padding: 0.3vh 0.2vw;
+  border-radius: 0.8vw;
+  margin: 0 0.2vw;
+}
+
+/* Correcto: color verde neón brillante */
 .char-correct {
   color: #39ff14;
-  text-shadow: 0 0 5px #39ff14;
+  text-shadow: 0 0 1.5vw #39ff14, 0 0 3vw #39ff14;
+  background: rgba(57, 255, 20, 0.15);
+  transform: scale(1.05);
 }
 
-/* Incorrecto: color rojo brillante */
+/* Incorrecto: color rojo brillante con efecto de error */
 .char-incorrect {
-  color: #ff0000;
-  text-shadow: 0 0 5px #ff0000;
-  animation: errorPulse 0.3s ease;
+  color: #ff3366;
+  text-shadow: 0 0 1.5vw #ff3366, 0 0 3vw #ff0000;
+  background: rgba(255, 51, 102, 0.2);
+  animation: errorShake 0.5s ease;
+  transform: scale(1.1);
 }
 
-@keyframes errorPulse {
-  0%,
-  100% {
-    opacity: 1;
+@keyframes errorShake {
+  0%, 100% {
+    transform: scale(1.1) translateX(0);
+  }
+  25% {
+    transform: scale(1.1) translateX(-0.3vw);
+  }
+  75% {
+    transform: scale(1.1) translateX(0.3vw);
   }
   50% {
     opacity: 0.5;
   }
 }
 
-/* Corregido: color amarillo-naranja neón */
+/* Corregido: color amarillo-naranja neón brillante */
 .char-corrected {
-  color: #ffa500;
-  text-shadow: 0 0 8px #ffa500, 0 0 15px #ff8c00;
+  color: #ffd700;
+  text-shadow: 0 0 1.5vw #ffd700, 0 0 3vw #ffa500;
+  background: rgba(255, 215, 0, 0.15);
+  transform: scale(1.05);
+  animation: correctedGlow 0.6s ease;
+}
+
+@keyframes correctedGlow {
+  0% {
+    box-shadow: 0 0 0.5vw rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 2vw rgba(255, 215, 0, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0.5vw rgba(255, 215, 0, 0.5);
+  }
 }
 
 .btn-back {
   position: fixed;
+  top: 2vh;
+  left: 2vw;
+  background: rgba(26, 42, 74, 0.9);
+  border: 0.2vw solid #00f0ff;
+  color: #00f0ff;
+  padding: 1.5vh 2vw;
+  border-radius: 1.5vw;
+  font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 2vw rgba(0, 240, 255, 0.3);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.btn-back:hover {
+  background: rgba(240, 33, 185, 0.2);
+  border-color: #f021b9;
+  color: #f021b9;
+  transform: translateX(-0.5vw) scale(1.05);
+  box-shadow: 0 0 3vw rgba(240, 33, 185, 0.6);
+}
+
+/* === RESPONSIVE BREAKPOINTS PARA LAYOUT === */
+@media (max-width: 1200px) {
+  .game-content-wrapper {
+    flex-direction: column;
+    gap: 2vh;
+  }
+  
+  .players-panel {
+    flex: 0 0 auto;
+    min-width: auto;
+    max-width: none;
+    width: 100%;
+    max-height: 25vh;
+  }
+  
+  .player-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 2vw;
+  }
+  
+  .player-card {
+    min-width: 250px;
+    flex-shrink: 0;
+  }
+  
+  .word-display {
+    max-width: 90vw;
+  }
+}
   bottom: 1rem;
   right: 1rem;
   padding: 0.5rem 1rem;

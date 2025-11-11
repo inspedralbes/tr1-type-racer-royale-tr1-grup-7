@@ -10,15 +10,11 @@ const props = defineProps({
 
 const emit = defineEmits(["createRoom", "back", "goToRoomList", "notify"]);
 
-// Configuraciones de la sala
+// Configuraciones de la sala para PALABRAS (simplificado)
 const roomName = ref("");
 const maxPlayers = ref(4);
 const roomPassword = ref("");
-const isPrivate = ref(false);
 const timeLimit = ref(3);
-const numRounds = ref(3);
-const difficulty = ref("normal");
-const theme = ref("aleatori");
 
 function handleCreateRoom() {
   if (!roomName.value.trim()) {
@@ -28,23 +24,17 @@ function handleCreateRoom() {
     });
     return;
   }
-  // Si es privada y no tiene contraseña, pedirla
-  if (isPrivate.value && !roomPassword.value.trim()) {
-    emit("notify", {
-      message: "Per favor, introdueix una contrasenya per a la sala privada.",
-      type: "warning",
-    });
-    return;
-  }
   const roomConfig = {
     roomName: roomName.value,
     maxPlayers: maxPlayers.value,
     password: roomPassword.value,
-    isPrivate: isPrivate.value,
+    isPrivate: false, // Siempre pública
     timeLimit: timeLimit.value,
-    numRounds: numRounds.value,
-    difficulty: difficulty.value,
-    theme: theme.value,
+    // Valores fijos para modo palabras
+    gameMode: "palabras",
+    numRounds: 1,
+    difficulty: "normal",
+    theme: "aleatori",
   };
   emit("createRoom", roomConfig);
 }
@@ -52,15 +42,13 @@ function handleCreateRoom() {
 function handleBack() {
   emit("back");
 }
-
-// Eliminat InfoDialog local: les validacions s'envien a la cua global via 'notify'
 </script>
 
 <template>
   <div class="create-room-container">
     <div class="header-section">
       <button @click="handleBack" class="btn-back">← Enrere</button>
-      <h2 class="page-title">Crear sala</h2>
+      <h2 class="page-title">Crear sala - PALABRAS</h2>
     </div>
 
     <div class="content-wrapper">
@@ -71,7 +59,7 @@ function handleBack() {
           <input
             v-model="roomName"
             type="text"
-            placeholder="Escriu el nom de la sala..."
+            placeholder="Escriu el nom de la sala de palabras..."
             class="room-input"
             @keyup.enter="handleCreateRoom"
             autofocus
@@ -102,20 +90,7 @@ function handleBack() {
             />
           </div>
 
-          <!-- Visibilidad -->
-          <div class="config-box">
-            <label class="config-label">Visibilitat de la sala</label>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" :value="false" v-model="isPrivate" />
-                <span>Pública</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" :value="true" v-model="isPrivate" />
-                <span>Privada</span>
-              </label>
-            </div>
-          </div>
+
 
           <!-- Límite de tiempo -->
           <div class="config-box">
@@ -128,42 +103,9 @@ function handleBack() {
             </select>
           </div>
 
-          <!-- Número de rondas -->
-          <div class="config-box">
-            <label class="config-label">Nombre de rondes</label>
-            <select v-model.number="numRounds" class="config-select">
-              <option :value="1">1 ronda</option>
-              <option :value="3">3 rondes</option>
-              <option :value="5">5 rondes</option>
-              <option :value="7">7 rondes</option>
-            </select>
-          </div>
-
-          <!-- Dificultad -->
-          <div class="config-box">
-            <label class="config-label">Dificultat</label>
-            <select v-model="difficulty" class="config-select">
-              <option value="facil">Fàcil</option>
-              <option value="normal">Normal</option>
-              <option value="dificil">Difícil</option>
-            </select>
-          </div>
-
-          <!-- Temática -->
-          <div class="config-box">
-            <label class="config-label">Temàtica</label>
-            <select v-model="theme" class="config-select">
-              <option value="aleatori">Aleatori</option>
-              <option value="animals">Animals</option>
-              <option value="pel·licules">Pel·lícules</option>
-              <option value="programacio">Programació</option>
-              <option value="esports">Esports</option>
-            </select>
-          </div>
-
           <!-- Botón Crear (grande, abajo) -->
           <div class="config-box create-button-box">
-            <button @click="handleCreateRoom" class="btn-create">CREAR</button>
+            <button @click="handleCreateRoom" class="btn-create">CREAR SALA PALABRAS</button>
           </div>
         </div>
       </div>
@@ -179,7 +121,6 @@ function handleBack() {
       </div>
     </div>
   </div>
-  <!-- InfoDialog local eliminat -->
 </template>
 
 <style scoped>
@@ -331,7 +272,7 @@ function handleBack() {
 
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5vh 1.5vw;
 }
 
@@ -354,7 +295,7 @@ function handleBack() {
 }
 
 .create-button-box {
-  grid-column: span 3;
+  grid-column: 1 / -1;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -452,10 +393,10 @@ function handleBack() {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.2rem;
-  background: linear-gradient(135deg, #f021b9, #00f0ff);
+  background: linear-gradient(135deg, #39ff14, #00f0ff);
   color: #0a192f;
   border: 2px solid transparent;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.4);
+  box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
   position: relative;
   overflow: hidden;
 }
@@ -482,7 +423,7 @@ function handleBack() {
 
 .btn-create:hover {
   transform: scale(1.02);
-  box-shadow: 0 0 40px rgba(240, 33, 185, 0.6);
+  box-shadow: 0 0 40px rgba(57, 255, 20, 0.6);
 }
 
 .side-buttons {
@@ -530,11 +471,7 @@ function handleBack() {
 
 @media (max-width: 1200px) {
   .config-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .create-button-box {
-    grid-column: span 2;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   }
 }
 
@@ -545,10 +482,6 @@ function handleBack() {
 
   .config-grid {
     grid-template-columns: 1fr;
-  }
-
-  .create-button-box {
-    grid-column: span 1;
   }
 
   .side-buttons {
