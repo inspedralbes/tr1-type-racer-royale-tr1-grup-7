@@ -125,8 +125,58 @@ const startCountdown = () => {
       try {
         typingInputRef.value?.focus();
       } catch {}
+      // Iniciar el timer del juego automáticamente
+      startGameTimer();
     }
   }, 1000);
+};
+
+// Timer del juego que cuenta hacia abajo
+const startGameTimer = () => {
+  timeRemaining.value = props.timeLimit;
+  if (gameTimer) clearInterval(gameTimer);
+  
+  gameTimer = setInterval(() => {
+    if (timeRemaining.value > 0) {
+      timeRemaining.value -= 1;
+    } else {
+      clearInterval(gameTimer);
+      // Fin del tiempo de esta ronda
+      endRound();
+    }
+  }, 1000);
+};
+
+// Finalizar ronda actual
+const endRound = () => {
+  console.log(`🏁 Ronda ${currentRound.value} finalizada`);
+  
+  // Detener el timer
+  if (gameTimer) {
+    clearInterval(gameTimer);
+    gameTimer = null;
+  }
+  
+  if (currentRound.value < maxRounds.value) {
+    // Hay más rondas, preparar la siguiente
+    currentRound.value += 1;
+    console.log(`🎮 Preparando ronda ${currentRound.value}...`);
+    
+    // Generar nuevo texto para la siguiente ronda
+    generarNuevoTexto();
+    
+    // Reiniciar la cuenta atrás y el contenido
+    startCountdown();
+  } else {
+    // Fin del juego
+    console.log('🎉 ¡Juego terminado!');
+    showContent.value = false;
+    showCountdown.value = false;
+    // Volver al lobby después de 2 segundos
+    setTimeout(() => {
+      emit('back-to-lobby');
+    }, 2000);
+  }
 };
 
 // Actualizar estados por carácter a partir del texto tipeado
@@ -168,6 +218,24 @@ const handleInput = (event) => {
   const typed = event.target.value;
   updateStatuses(typed);
   emitProgress(); // Emitir progreso a otros jugadores
+  
+  // Verificar si el jugador ha completado el texto
+  if (typed.length >= textToType.value.length && progress.value === 100) {
+    // Verificar que todo el texto es correcto
+    let allCorrect = true;
+    for (let i = 0; i < textToType.value.length; i++) {
+      if (typed[i] !== textToType.value[i]) {
+        allCorrect = false;
+        break;
+      }
+    }
+    
+    if (allCorrect) {
+      console.log('✅ ¡Texto completado correctamente!');
+      // Finalizar la ronda actual
+      endRound();
+    }
+  }
 };
 
 // Manejar evento keydown para mostrar la tecla en el teclado visual
@@ -350,11 +418,19 @@ const getPlayerIndicator = (playerProgress) => {
       </div>
       <div class="countdown-label">PREPARATS...</div>
     </div>
-    <!-- Barra superior: Tiempo, progreso y errores -->
+    <!-- Barra superior: Tiempo, WPM, progreso y errores -->
     <div class="game-header">
       <div class="time-section">
         <div class="time-label">Temps</div>
-        <div class="time-value">{{ timeRemaining }}s</div>
+        <div class="time-value" :class="{ 'warning': timeRemaining <= 10 && timeRemaining > 0 }">{{ timeRemaining }}s</div>
+      </div>
+      <div class="wpm-section">
+        <div class="wpm-label">WPM</div>
+        <div class="wpm-value">{{ calculateWPM() }}</div>
+      </div>
+      <div class="round-section">
+        <div class="round-label">Ronda</div>
+        <div class="round-value">{{ currentRound }} / {{ maxRounds }}</div>
       </div>
       <div class="progress-section">
         <div class="progress-bar">
@@ -722,6 +798,69 @@ const getPlayerIndicator = (playerProgress) => {
 }
 
 .time-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f021b9;
+  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
+  font-family: "Fira Code", monospace;
+}
+
+.time-value.warning {
+  color: #ff9500;
+  text-shadow: 0 0 10px #ff9500, 0 0 20px #ff9500;
+  animation: pulse-warning 1s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.wpm-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 80px;
+}
+
+.wpm-label {
+  font-size: 0.85rem;
+  color: #00f0ff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.wpm-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #39FF14;
+  text-shadow: 0 0 10px #39FF14, 0 0 20px #39FF14;
+  font-family: "Fira Code", monospace;
+}
+
+.round-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 80px;
+}
+
+.round-label {
+  font-size: 0.85rem;
+  color: #00f0ff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.round-value {
   font-size: 1.5rem;
   font-weight: 700;
   color: #f021b9;

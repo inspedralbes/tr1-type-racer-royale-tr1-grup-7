@@ -1,8 +1,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from "vue";
+import GameEngine from "./components/GameEngine.vue";
 import GameEngineWords from "./components/GameEngineWords.vue";
 import GameView from "./components/GameView.vue";
+import RoomList from "./components/RoomList.vue";
 import RoomListWords from "./components/RoomListWords.vue";
+import CreateRoom from "./components/CreateRoom.vue";
 import CreateRoomWords from "./components/CreateRoomWords.vue";
 import RoomListText from "./components/RoomListText.vue";
 import CreateRoomText from "./components/CreateRoomText.vue";
@@ -458,6 +461,12 @@ watch(musicEnabled, (nv) => {
     soundManager.stopMusic();
   }
 });
+
+// React to volume changes (live volume control)
+watch(volume, (newVolume) => {
+  if (!soundManager.initialized) return;
+  soundManager.setVolume((newVolume ?? 50) / 100);
+});
 </script>
 
 <template>
@@ -471,6 +480,7 @@ watch(musicEnabled, (nv) => {
     <WelcomeScreen
       v-if="vistaActual === 'inicio'"
       @continue="handleWelcome"
+      @open-settings="openSettings"
       key="welcome"
     />
 
@@ -482,101 +492,94 @@ watch(musicEnabled, (nv) => {
       key="modeSelect"
     />
 
-    <!-- VISTA 2: CREAR O UNIRSE A SALA -->
+    <!-- VISTA 2: SELECCIÓN DE ACCIÓN (CREAR O UNIRSE) -->
     <RoomActionSelect
       v-else-if="vistaActual === 'salaEspera'"
-      @selectAction="handleRoomAction"
+      @room-action="handleRoomAction"
       @back="backToModeSelect"
       key="roomAction"
     />
 
-    <!-- VISTA 3: LLISTA DE SALES -->
-    <!-- Lista de salas para PALABRAS -->
-    <RoomListWords
-      v-else-if="vistaActual === 'roomList' && modoJuego === 'palabras'"
-      :rooms="activeRooms"
-      :player-name="nomJugador"
-      @join-room="joinRoom"
-      @notify="handleNotify"
-      @create-room="goToCreateRoom"
-      @back="backToRoomAction"
-      key="roomListWords"
-    />
+      <!-- VISTA 3: LLISTA DE SALES -->
+      <RoomListWords 
+        v-if="vistaActual === 'roomList' && modoJuego === 'palabras'"
+        :rooms="activeRooms"
+        :player-name="nomJugador"
+        @join-room="joinRoom"
+        @notify="handleNotify"
+        @create-room="goToCreateRoom"
+        @back="backToRoomAction"
+        key="roomListWords"
+      />
+      <RoomList 
+        v-else-if="vistaActual === 'roomList' && modoJuego === 'texto'"
+        :rooms="activeRooms"
+        :player-name="nomJugador"
+        @join-room="joinRoom"
+        @notify="handleNotify"
+        @create-room="goToCreateRoom"
+        @back="backToRoomAction"
+        key="roomList"
+      />
 
-    <!-- Lista de salas para TEXTO -->
-    <RoomListText
-      v-else-if="vistaActual === 'roomList' && modoJuego === 'texto'"
-      :rooms="activeRooms"
-      :player-name="nomJugador"
-      @join-room="joinRoom"
-      @notify="handleNotify"
-      @create-room="goToCreateRoom"
-      @back="backToRoomAction"
-      key="roomListText"
-    />
+      <!-- VISTA 4: CREAR SALA -->
+      <CreateRoomWords 
+        v-if="vistaActual === 'createRoom' && modoJuego === 'palabras'"
+        :player-name="nomJugador"
+        @create-room="createRoom"
+        @notify="handleNotify"
+        @go-to-room-list="vistaActual = 'roomList'"
+        @back="backToRoomAction"
+        key="createRoomWords"
+      />
+      <CreateRoom 
+        v-else-if="vistaActual === 'createRoom' && modoJuego === 'texto'"
+        :player-name="nomJugador"
+        @create-room="createRoom"
+        @notify="handleNotify"
+        @go-to-room-list="vistaActual = 'roomList'"
+        @back="backToRoomAction"
+        key="createRoom"
+      />
 
-    <!-- VISTA 4: CREAR SALA -->
-    <!-- Crear sala para PALABRAS -->
-    <CreateRoomWords
-      v-else-if="vistaActual === 'createRoom' && modoJuego === 'palabras'"
-      :player-name="nomJugador"
-      @create-room="createRoom"
-      @notify="handleNotify"
-      @go-to-room-list="vistaActual = 'roomList'"
-      @back="backToRoomAction"
-      key="createRoomWords"
-    />
+      <!-- VISTA 5: LOBBY -->
+      <LobbyRoom 
+        v-if="vistaActual === 'lobby'"
+        :room-name="nomSala || 'Sala'"
+        :players="jugadors"
+        :room-config="currentRoomConfig || {}"
+        :is-admin="isRoomAdmin"
+        :current-player-id="communicationManager.getSocketId() || ''"
+        @start-game="startGame"
+        @leave-room="leaveRoom"
+        @kick-player="kickPlayer"
+        key="lobby"
+      />
 
-    <!-- Crear sala para TEXTO -->
-    <CreateRoomText
-      v-else-if="vistaActual === 'createRoom' && modoJuego === 'texto'"
-      :player-name="nomJugador"
-      @create-room="createRoom"
-      @notify="handleNotify"
-      @go-to-room-list="vistaActual = 'roomList'"
-      @back="backToRoomAction"
-      key="createRoomText"
-    />
+      <!-- VISTA 6: JOC -->
+      <!-- Modo de texto: GameView -->
+      <GameView
+        v-if="vistaActual === 'joc' && modoJuego === 'texto'"
+        :players="jugadors"
+        :tematica="currentRoomConfig?.theme || 'aleatori'"
+        :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
+        :gameText="gameText"
+        @back-to-lobby="vistaActual = 'lobby'"
+        key="joc-texto"
+      />
 
-    <!-- VISTA 5: LOBBY -->
-    <LobbyRoom
-      v-else-if="vistaActual === 'lobby'"
-      :room-name="nomSala || 'Sala'"
-      :players="jugadors"
-      :room-config="currentRoomConfig || {}"
-      :is-admin="isRoomAdmin"
-      :current-player-id="communicationManager.getSocketId() || ''"
-      :game-mode="modoJuego"
-      @start-game="startGame"
-      @leave-room="leaveRoom"
-      @kick-player="kickPlayer"
-      key="lobby"
-    />
-
-    <!-- VISTA 5: JOC -->
-    <!-- Modo de texto: GameView -->
-    <GameView
-      v-if="vistaActual === 'joc' && modoJuego === 'texto'"
-      :players="jugadors"
-      :tematica="currentRoomConfig?.theme || 'aleatori'"
-      :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
-      :gameText="gameText"
-      @back-to-lobby="vistaActual = 'lobby'"
-      key="joc-texto"
-    />
-
-    <!-- Modo de palabras: GameEngineWords -->
-    <GameEngineWords
-      v-else-if="vistaActual === 'joc' && modoJuego === 'palabras'"
-      :players="jugadors"
-      :tematica="currentRoomConfig?.theme || 'aleatori'"
-      :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
-      :gameText="gameText"
-      :gameWords="gameWords"
-      :isRoomAdmin="isRoomAdmin"
-      @back-to-lobby="vistaActual = 'lobby'"
-      key="joc-palabras"
-    />
+      <!-- Modo de palabras: GameEngineWords -->
+      <GameEngineWords
+        v-else-if="vistaActual === 'joc' && modoJuego === 'palabras'"
+        :players="jugadors"
+        :tematica="currentRoomConfig?.theme || 'aleatori'"
+        :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
+        :gameText="gameText"
+        :gameWords="gameWords"
+        :isRoomAdmin="isRoomAdmin"
+        @back-to-lobby="vistaActual = 'lobby'"
+        key="joc-palabras"
+      />
 
     <!-- Diálogos personalizados -->
     <PasswordDialog
@@ -611,7 +614,7 @@ watch(musicEnabled, (nv) => {
     />
 
     <SettingsPanel
-      :is-open="showSettings"
+      :isOpen="showSettings"
       :player-name="nomJugador"
       :player-color="playerColor"
       :volume="volume"

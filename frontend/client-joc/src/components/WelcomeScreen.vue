@@ -125,6 +125,7 @@ const handleSubmit = () => {
       transparent 50%
     );
   pointer-events: none;
+  z-index: 0;
 }
 
 .welcome-container {
@@ -399,7 +400,6 @@ const handleSubmit = () => {
     justify-content: center;
     padding-top: 2vh;
   }
-  
   .welcome-container {
     width: clamp(380px, 38vw, 65vw);
     max-height: 95vh;
@@ -407,17 +407,14 @@ const handleSubmit = () => {
     gap: clamp(0.5rem, 1vh, 1.2vh);
     margin: 1vh 0;
   }
-  
   .welcome-form {
     gap: clamp(0.8rem, 1.8vw, 2rem);
     padding: clamp(0.3rem, 0.6vh, 0.8rem) 0;
     margin: clamp(0.3rem, 0.6vh, 0.8rem) 0;
   }
-  
   .game-title {
     font-size: clamp(1.5rem, 3vw, 3.2rem);
   }
-  
   .btn-continue {
     margin-top: clamp(0.2rem, 0.5vh, 0.6rem);
   }
@@ -435,7 +432,6 @@ const handleSubmit = () => {
   .welcome-screen {
     padding: 3vh 4vw;
   }
-  
   .welcome-container {
     width: clamp(400px, 45vw, 75vw);
   }
@@ -445,25 +441,20 @@ const handleSubmit = () => {
   .welcome-screen {
     padding: 2vh 2vw;
   }
-
   .welcome-container {
     padding: 1.5rem 1.2rem;
     width: clamp(350px, 90vw, 95vw);
   }
-
   .welcome-form {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-
   .game-title {
     font-size: clamp(1.8rem, 5vw, 2.5rem);
   }
-
   .subtitle {
     font-size: clamp(0.7rem, 2vw, 1rem);
   }
-
   .btn-continue {
     width: 90%;
     max-width: 300px;
@@ -474,16 +465,13 @@ const handleSubmit = () => {
   .welcome-screen {
     padding: 1vh 1vw;
   }
-
   .welcome-container {
     padding: 1rem 0.8rem;
     width: 95vw;
   }
-
   .game-title {
     font-size: clamp(1.5rem, 6vw, 2rem);
   }
-
   .subtitle {
     font-size: clamp(0.6rem, 3vw, 0.8rem);
   }

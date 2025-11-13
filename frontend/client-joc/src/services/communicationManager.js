@@ -146,12 +146,12 @@ const communicationManager = {
 
   // Emitir tecla presionada
   emitPlayerKeyPress(data) {
-    socket.emit("playerKeyPress", data);
+    socket.emit('keyPressed', data);
   },
 
   // Escuchar teclas presionadas por otros jugadores
   onPlayerKeyPress(callback) {
-    socket.on("playerKeyPress", callback);
+    socket.on('keyPressed', callback);
   },
 
   // --- EVENTOS DE RACHA ---
@@ -165,6 +165,16 @@ const communicationManager = {
   onPlayerStreak(callback) {
     socket.on("playerStreak", callback);
   },
+
+  // Solicitar nuevo texto para la siguiente ronda
+  requestNewRound() {
+    socket.emit('requestNewRound');
+  },
+
+  // Escuchar nuevo texto de ronda
+  onNewRoundText(callback) {
+    socket.on('newRoundText', callback);
+  }
 };
 
 export default communicationManager;
