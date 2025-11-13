@@ -202,7 +202,7 @@ El joc segueix un flux d'usuari intuïtiu i ben estructurat:
 
 El següent diagrama mostra la disposició i navegació entre les diferents pantalles del joc:
 
-![Disposició de Pantalles](docs/flux-pantalles.jpg)
+![Disposició de Pantalles](doc/flux-pantalles.jpg)
 
 ---
 
