@@ -20,7 +20,7 @@ const searchQuery = ref("");
 watch(
   () => props.rooms,
   (newRooms) => {
-    console.log("🔍 RoomListWords recibió rooms:", newRooms);
+    console.log("🔍 RoomListText recibió rooms:", newRooms);
     console.log(
       "🔍 Tipo:",
       typeof newRooms,
@@ -40,35 +40,35 @@ watch(
   { immediate: true }
 );
 
-// Filtrar salas SOLO DE PALABRAS
+// Filtrar salas SOLO DE TEXTO
 const filteredRooms = computed(() => {
-  console.log("🔍 Filtrando salas de PALABRAS");
+  console.log("🔍 Filtrando salas de TEXTO");
 
-  // Filtrar salas de palabras ÚNICAMENTE
-  const wordsRooms = props.rooms.filter((room) => {
-    const isWordsRoom = room.gameMode === "palabras";
+  // Filtrar salas de texto (solo las que específicamente son de texto)
+  const textRooms = props.rooms.filter((room) => {
+    const isTextRoom = room.gameMode === "texto";
     console.log(
-      `🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> es de palabras: ${isWordsRoom}`
+      `🔍 Sala ${room.name}: gameMode="${room.gameMode}" -> es de texto: ${isTextRoom}`
     );
-    return isWordsRoom;
+    return isTextRoom;
   });
 
-  console.log("🔍 Salas de palabras encontradas:", wordsRooms);
+  console.log("🔍 Salas de texto encontradas:", textRooms);
 
   if (!searchQuery.value.trim()) {
-    // Sin búsqueda: mostrar TODAS las salas de palabras (ya no hay privadas, todas son públicas)
+    // Sin búsqueda: mostrar TODAS las salas de texto (ya no hay privadas, todas son públicas)
     console.log(
-      "🔍 Mostrando TODAS las salas de palabras (sin filtrar por privacidad):",
-      wordsRooms
+      "🔍 Mostrando TODAS las salas de texto (sin filtrar por privacidad):",
+      textRooms
     );
-    return wordsRooms;
+    return textRooms;
   }
 
-  // Con búsqueda: mostrar tanto públicas como privadas de palabras que coincidan
-  const searchResults = wordsRooms.filter((room) =>
+  // Con búsqueda: mostrar tanto públicas como privadas de texto que coincidan
+  const searchResults = textRooms.filter((room) =>
     room.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
-  console.log("🔍 Resultados de búsqueda en palabras:", searchResults);
+  console.log("🔍 Resultados de búsqueda en texto:", searchResults);
   return searchResults;
 });
 
@@ -96,14 +96,14 @@ function handleBack() {
   <div class="room-list-container">
     <div class="header-section">
       <button @click="handleBack" class="btn-back">← Atrás</button>
-      <h2 class="page-title">Salas PALABRAS ({{ filteredRooms.length }})</h2>
+      <h2 class="page-title">Salas TEXTO ({{ filteredRooms.length }})</h2>
     </div>
 
     <div class="content-wrapper">
       <!-- Panel principal de salas -->
       <div class="rooms-panel">
         <div class="panel-header">
-          <h3>SALAS DE PALABRAS</h3>
+          <h3>SALAS DE TEXTO</h3>
         </div>
         <div class="rooms-grid">
           <template v-if="filteredRooms.length > 0">
@@ -113,7 +113,7 @@ function handleBack() {
               @click="handleJoinRoom(room)"
               class="room-card"
             >
-              <div class="room-icon">🔤</div>
+              <div class="room-icon">📝</div>
               <div class="room-info">
                 <div class="room-name">{{ room.name }}</div>
                 <div class="room-details">
@@ -122,6 +122,9 @@ function handleBack() {
                   <span v-else-if="room.password" class="password-badge"
                     >🔑</span
                   >
+                  <span class="mode-info"
+                    >{{ room.difficulty }} · {{ room.theme }}</span
+                  >
                 </div>
               </div>
             </button>
@@ -129,13 +132,13 @@ function handleBack() {
 
           <div v-else class="no-rooms">
             <div class="no-rooms-icon">
-              {{ searchQuery.trim() ? "🔍" : "🔤" }}
+              {{ searchQuery.trim() ? "🔍" : "📝" }}
             </div>
             <div class="no-rooms-text">
               {{
                 searchQuery.trim()
-                  ? "No s'han trobat salas de palabras amb aquest nom"
-                  : "No hi ha salas de PALABRAS creades"
+                  ? "No s'han trobat salas de texto amb aquest nom"
+                  : "No hi ha salas de TEXTO creades"
               }}
             </div>
             <div class="no-rooms-subtext">
@@ -157,7 +160,7 @@ function handleBack() {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Buscar sala de palabras..."
+            placeholder="Buscar sala de texto..."
             class="search-input"
           />
         </div>
@@ -223,11 +226,11 @@ function handleBack() {
 
 .page-title {
   font-size: 2.5rem;
-  color: #39ff14;
+  color: #ff6600;
   font-family: "Share Tech Mono", monospace;
   font-weight: 700;
   margin: 0;
-  text-shadow: 0 0 10px rgba(57, 255, 20, 0.8);
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.8);
   letter-spacing: 0.1rem;
 }
 
@@ -242,26 +245,26 @@ function handleBack() {
   flex: 1;
   background: rgba(26, 42, 74, 0.6);
   backdrop-filter: blur(10px);
-  border: 2px solid #39ff14;
+  border: 2px solid #ff6600;
   border-radius: 16px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 30px rgba(255, 102, 0, 0.4);
 }
 
 .panel-header {
   background: linear-gradient(
     135deg,
-    rgba(57, 255, 20, 0.3),
+    rgba(255, 102, 0, 0.3),
     rgba(0, 240, 255, 0.3)
   );
-  border: 2px solid #39ff14;
+  border: 2px solid #ff6600;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
   text-align: center;
-  box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.4);
 }
 
 .panel-header h3 {
@@ -294,19 +297,19 @@ function handleBack() {
 }
 
 .rooms-grid::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #39ff14, #00f0ff);
+  background: linear-gradient(180deg, #ff6600, #f021b9);
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+  box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
 }
 
 .rooms-grid::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #00f0ff, #39ff14);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+  background: linear-gradient(180deg, #f021b9, #ff6600);
+  box-shadow: 0 0 15px rgba(240, 33, 185, 0.5);
 }
 
 .room-card {
   background: rgba(26, 42, 74, 0.4);
-  border: 2px solid rgba(57, 255, 20, 0.4);
+  border: 2px solid rgba(255, 102, 0, 0.4);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -319,16 +322,16 @@ function handleBack() {
 }
 
 .room-card:hover {
-  background: rgba(57, 255, 20, 0.2);
-  border-color: #39ff14;
+  background: rgba(255, 102, 0, 0.2);
+  border-color: #ff6600;
   transform: translateX(10px);
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
 }
 
 .room-icon {
   font-size: 2.5rem;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 10px rgba(57, 255, 20, 0.5));
+  filter: drop-shadow(0 0 10px rgba(255, 102, 0, 0.5));
 }
 
 .room-info {
@@ -343,8 +346,8 @@ function handleBack() {
   font-size: 1.3rem;
   font-weight: 600;
   word-break: break-word;
-  color: #39ff14;
-  text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+  color: #ff6600;
+  text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
 }
 
 .room-details {
@@ -353,6 +356,7 @@ function handleBack() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .private-badge {
@@ -363,6 +367,15 @@ function handleBack() {
   font-size: 0.8rem;
 }
 
+.mode-info {
+  font-size: 0.8rem;
+  color: rgba(0, 240, 255, 0.7);
+  background: rgba(0, 240, 255, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
 .no-rooms {
   display: flex;
   flex-direction: column;
@@ -370,7 +383,7 @@ function handleBack() {
   justify-content: center;
   gap: 1rem;
   text-align: center;
-  color: rgba(57, 255, 20, 0.6);
+  color: rgba(255, 102, 0, 0.6);
   font-family: "Share Tech Mono", monospace;
   font-size: 1.2rem;
   padding: 3rem;
@@ -386,8 +399,8 @@ function handleBack() {
 .no-rooms-text {
   font-size: 1.3rem;
   font-weight: 500;
-  color: #39ff14;
-  text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+  color: #ff6600;
+  text-shadow: 0 0 8px rgba(255, 102, 0, 0.4);
 }
 
 .no-rooms-subtext {
@@ -409,7 +422,7 @@ function handleBack() {
   display: flex;
   align-items: center;
   background: rgba(26, 42, 74, 0.6);
-  border: 2px solid rgba(57, 255, 20, 0.4);
+  border: 2px solid rgba(255, 102, 0, 0.4);
   border-radius: 12px;
   padding: 0.5rem;
   transition: all 0.3s ease;
@@ -417,8 +430,8 @@ function handleBack() {
 }
 
 .search-container:focus-within {
-  border-color: #39ff14;
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+  border-color: #ff6600;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
 }
 
 .search-icon {
@@ -432,14 +445,14 @@ function handleBack() {
   background: transparent;
   border: none;
   outline: none;
-  color: #39ff14;
+  color: #ff6600;
   font-size: 1rem;
   font-family: "Fira Code", monospace;
   padding: 0.5rem;
 }
 
 .search-input::placeholder {
-  color: rgba(57, 255, 20, 0.4);
+  color: rgba(255, 102, 0, 0.4);
 }
 
 .btn-action {
@@ -457,14 +470,14 @@ function handleBack() {
 }
 
 .btn-creator {
-  background: linear-gradient(135deg, #39ff14, #00f0ff);
-  color: #0a192f;
-  border: 2px solid #39ff14;
+  background: linear-gradient(135deg, #ff6600, #f021b9);
+  color: #ffffff;
+  border: 2px solid #ff6600;
 }
 
 .btn-creator:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.6);
+  box-shadow: 0 0 30px rgba(255, 102, 0, 0.6);
 }
 
 .btn-unirse {

@@ -1,6 +1,6 @@
 /* TECLAZO - Neón Cyberpunk Theme */
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
 
 * {
   box-sizing: border-box;
@@ -8,26 +8,31 @@
   padding: 0;
 }
 
+html,
 body {
-  font-family: 'Share Tech Mono', 'Fira Code', monospace;
-  
-  background-color: #0A192F;
-  background-image: 
-    repeating-linear-gradient(
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+}
+
+body {
+  font-family: "Share Tech Mono", "Fira Code", monospace;
+
+  background-color: #0a192f;
+  background-image: repeating-linear-gradient(
       0deg,
       rgba(0, 240, 255, 0.03) 0px,
       transparent 1px,
       transparent 2px,
       rgba(0, 240, 255, 0.03) 3px
     ),
-    radial-gradient(ellipse at center, #0A192F 0%, #050A15 100%);
-  color: #E0E0E0;
-  
+    radial-gradient(ellipse at center, #0a192f 0%, #050a15 100%);
+  color: #e0e0e0;
+
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  overflow: hidden;
 }
 
 /* Scrollbar Cyberpunk */
@@ -35,15 +40,14 @@ body {
   width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0A192F;
-  border: 1px solid #00F0FF;
+  background: #0a192f;
+  border: 1px solid #00f0ff;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #F021B9 0%, #00F0FF 100%);
+  background: linear-gradient(180deg, #f021b9 0%, #00f0ff 100%);
   border-radius: 5px;
-  box-shadow: 0 0 10px #F021B9;
+  box-shadow: 0 0 10px #f021b9;
 }
 ::-webkit-scrollbar-thumb:hover {
-  box-shadow: 0 0 15px #F021B9, 0 0 10px #00F0FF;
+  box-shadow: 0 0 15px #f021b9, 0 0 10px #00f0ff;
 }
-

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import communicationManager from "../services/communicationManager.js";
+import soundManager from "../services/soundManager.js";
 
 // Banco de palabras para el modo de juego
 const WORD_BANK = [
@@ -875,18 +876,18 @@ const startGameTimer = () => {
 const finishGame = () => {
   gameFinished.value = true;
   showContent.value = false;
-  
+
   // Emitir progreso final
   emitProgress();
-  
+
   console.log("🏁 Juego finalizado!");
   console.log("📊 Resultados finales:", {
     jugadores: playersState.value,
     miProgreso: {
       palabras: wordsCompleted.value,
       errores: errors.value,
-      wpm: calculateWPM()
-    }
+      wpm: calculateWPM(),
+    },
   });
 };
 
@@ -933,6 +934,8 @@ const nextWord = () => {
   const wordHadErrors = everIncorrect.value.some((error) => error === true);
 
   if (!wordHadErrors) {
+    // Sonido de recompensa al acertar una palabra sin errores
+    soundManager.playCoin();
     // Incrementar racha
     currentStreak.value++;
     console.log("🔥 Racha actual:", currentStreak.value);
@@ -1014,6 +1017,16 @@ const onKeyDown = (event) => {
 
   activeKey.value = displayKey;
   emitKeyPress(displayKey); // Emitir tecla a otros jugadores
+
+  // Sonido de tecleo para letras/números mientras se juega
+  if (
+    showContent.value &&
+    !gameFinished.value &&
+    key.length === 1 &&
+    /[A-Za-z0-9]/.test(key)
+  ) {
+    soundManager.playType();
+  }
 
   if (activeKeyTimer) clearTimeout(activeKeyTimer);
   activeKeyTimer = setTimeout(() => {
@@ -1315,17 +1328,49 @@ const getPlayerColor = (index) => {
 // Obtener el ganador (jugador con más palabras correctas)
 const getWinner = () => {
   if (playersState.value.length === 0) return null;
-  
-  const winner = [...playersState.value].sort((a, b) => {
+
+  const sorted = [...playersState.value].sort((a, b) => {
     // Ordenar por palabras completadas (descendente)
     if (b.wordsCompleted !== a.wordsCompleted) {
       return b.wordsCompleted - a.wordsCompleted;
     }
     // En caso de empate, ordenar por menos errores
     return a.errors - b.errors;
-  })[0];
-  
-  return winner;
+  });
+
+  const first = sorted[0];
+  const second = sorted[1];
+
+  // Verificar si hay empate: mismas palabras y mismos errores
+  if (
+    second &&
+    first.wordsCompleted === second.wordsCompleted &&
+    first.errors === second.errors
+  ) {
+    return null; // Empate
+  }
+
+  return first;
+};
+
+// Verificar si hay empate
+const isTie = () => {
+  if (playersState.value.length < 2) return false;
+
+  const sorted = [...playersState.value].sort((a, b) => {
+    if (b.wordsCompleted !== a.wordsCompleted) {
+      return b.wordsCompleted - a.wordsCompleted;
+    }
+    return a.errors - b.errors;
+  });
+
+  const first = sorted[0];
+  const second = sorted[1];
+
+  return (
+    first.wordsCompleted === second.wordsCompleted &&
+    first.errors === second.errors
+  );
 };
 
 // Obtener resultados finales ordenados
@@ -1345,25 +1390,25 @@ const restartGame = () => {
   gameFinished.value = false;
   showContent.value = false;
   showCountdown.value = false;
-  
+
   // Resetear estadísticas
   errors.value = 0;
   totalErrors.value = 0;
   wordsCompleted.value = 0;
   currentStreak.value = 0;
-  
+
   // Reinicializar el juego
   initializeGame();
-  
+
   // Reiniciar countdown
   startCountdown();
-  
+
   console.log("🔄 Juego reiniciado");
 };
 
 // Salir al lobby
 const exitToLobby = () => {
-  emit('back-to-lobby');
+  emit("back-to-lobby");
 };
 
 // Verificar si el usuario actual es el admin/creador de la sala
@@ -1401,6 +1446,13 @@ const isRoomCreator = computed(() => {
 
     <!-- Barra superior: Tiempo, palabras completadas y errores -->
     <div class="game-header">
+      <button
+        @click="emit('back-to-lobby')"
+        class="btn-back"
+        v-if="!gameFinished"
+      >
+        ← Lobby
+      </button>
       <div class="time-section">
         <div class="time-label">Temps</div>
         <div class="time-value">{{ timeRemaining }}s</div>
@@ -1417,196 +1469,198 @@ const isRoomCreator = computed(() => {
 
     <!-- Área central: Texto a escribir -->
     <div class="game-content" v-show="showContent">
-      <div class="game-content-wrapper">
-        <!-- Panel lateral de jugadores -->
-        <div class="players-panel">
-          <h3 class="panel-title">Jugadors</h3>
-          <div class="player-list">
-            <div
-              v-for="(player, index) in sortedPlayers"
-              :key="player.id"
-              class="player-card"
-              :class="{ 'is-typing': player.isTyping }"
-            >
-              <div class="player-header">
-                <div
-                  class="player-avatar"
-                  :style="{ backgroundColor: getPlayerColor(index) }"
-                >
-                  {{ player.name.charAt(0).toUpperCase() }}
-                </div>
-                <div class="player-info">
-                  <div class="player-name">
-                    {{ player.name }}
-                    <span v-if="player.hasStreak" class="player-streak-icon">
-                      🔥<span class="streak-number">{{ player.streak }}</span>
-                    </span>
-                  </div>
-                  <div class="player-stats">
-                    <span class="stat-wpm">{{ player.wpm || 0 }} WPM</span>
-                  </div>
-                </div>
-              </div>
-              <div class="player-bottom">
-                <span class="player-words"
-                  >{{ player.wordsCompleted || 0 }} paraules</span
-                >
-                <span class="player-errors"
-                  >{{ player.errors || 0 }} errors</span
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Área de texto principal -->
-        <div class="text-area-wrapper">
-          <div class="word-display">
-            <div class="current-word">
-              <span
-                v-for="(ch, idx) in currentWord.split('')"
-                :key="idx"
-                :class="statusClass(charStatuses[idx])"
+      <!-- Panel lateral de jugadores -->
+      <div class="players-panel">
+        <h3 class="panel-title">Jugadors</h3>
+        <div class="player-list">
+          <div
+            v-for="(player, index) in sortedPlayers"
+            :key="player.id"
+            class="player-card"
+            :class="{ 'is-typing': player.isTyping }"
+          >
+            <div class="player-header">
+              <div
+                class="player-avatar"
+                :style="{ backgroundColor: getPlayerColor(index) }"
               >
-                {{ ch }}
-              </span>
+                {{ player.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="player-info">
+                <div class="player-name">
+                  {{ player.name }}
+                  <span v-if="player.hasStreak" class="player-streak-icon">
+                    🔥<span class="streak-number">{{ player.streak }}</span>
+                  </span>
+                </div>
+                <div class="player-stats">
+                  <span class="stat-wpm">{{ player.wpm || 0 }} WPM</span>
+                </div>
+              </div>
             </div>
-            <div class="word-counter">
-              Paraules acertades: {{ wordsCompleted }}
+            <div class="player-bottom">
+              <span class="player-words"
+                >{{ player.wordsCompleted || 0 }} paraules</span
+              >
+              <span class="player-errors">{{ player.errors || 0 }} errors</span>
             </div>
-          </div>
-
-          <div class="input-area">
-            <input
-              type="text"
-              v-model="userInput"
-              @input="handleInput"
-              @keydown="onKeyDown"
-              placeholder="Escriu la paraula..."
-              class="typing-input"
-              :disabled="!showContent"
-              ref="typingInputRef"
-              autofocus
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Área inferior: Teclado visual con indicadores multijugador -->
-    <div class="game-footer">
-      <div class="keyboard-visual">
-        <div class="keyboard-row">
-          <div
-            class="key"
-            v-for="letter in 'QWERTYUIOP'"
-            :key="letter"
-            :class="{
-              pressed: activeKey === letter,
-              'other-player-press': playersState.some(
-                (p) => p.isTyping && p.lastKey === letter
-              ),
-            }"
-          >
-            {{ letter }}
+      <!-- Área de Juego Principal (Derecha) -->
+      <div class="game-area">
+        <!-- 1. Display de la palabra -->
+        <div class="word-display-container">
+          <div class="current-word">
             <span
-              v-for="(player, pIndex) in playersState.filter(
-                (p) => p.isTyping && p.lastKey === letter
-              )"
-              :key="player.id"
-              class="key-player-indicator"
-              :style="{ backgroundColor: getPlayerColor(pIndex) }"
-            ></span>
+              v-for="(ch, idx) in currentWord.split('')"
+              :key="idx"
+              :class="statusClass(charStatuses[idx])"
+            >
+              {{ ch }}
+            </span>
           </div>
         </div>
-        <div class="keyboard-row">
-          <div
-            class="key"
-            v-for="letter in 'ASDFGHJKL'"
-            :key="letter"
-            :class="{
-              pressed: activeKey === letter,
-              'other-player-press': playersState.some(
-                (p) => p.isTyping && p.lastKey === letter
-              ),
-            }"
-          >
-            {{ letter }}
-            <span
-              v-for="(player, pIndex) in playersState.filter(
-                (p) => p.isTyping && p.lastKey === letter
-              )"
-              :key="player.id"
-              class="key-player-indicator"
-              :style="{ backgroundColor: getPlayerColor(pIndex) }"
-            ></span>
-          </div>
+
+        <!-- 2. Input para escribir -->
+        <div class="input-container">
+          <input
+            type="text"
+            v-model="userInput"
+            @input="handleInput"
+            @keydown="onKeyDown"
+            placeholder="Escriu la paraula..."
+            class="typing-input"
+            :disabled="!showContent"
+            ref="typingInputRef"
+            autofocus
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
         </div>
-        <div class="keyboard-row">
-          <div
-            class="key"
-            v-for="letter in 'ZXCVBNM'"
-            :key="letter"
-            :class="{
-              pressed: activeKey === letter,
-              'other-player-press': playersState.some(
-                (p) => p.isTyping && p.lastKey === letter
-              ),
-            }"
-          >
-            {{ letter }}
-            <span
-              v-for="(player, pIndex) in playersState.filter(
-                (p) => p.isTyping && p.lastKey === letter
-              )"
-              :key="player.id"
-              class="key-player-indicator"
-              :style="{ backgroundColor: getPlayerColor(pIndex) }"
-            ></span>
+
+        <!-- 3. Teclado Visual -->
+        <div class="keyboard-container">
+          <!-- Etiqueta superior para mostrar la tecla pulsada (teclazo) -->
+          <div class="keyboard-label">
+            <span v-if="activeKey" class="keyboard-label-text">{{
+              activeKey
+            }}</span>
+            <span v-else class="keyboard-label-placeholder">&nbsp;</span>
           </div>
-        </div>
-        <div class="keyboard-row special-row">
-          <div
-            class="key wide"
-            :class="{
-              pressed: activeKey === 'SPACE',
-              'other-player-press': playersState.some(
-                (p) => p.isTyping && p.lastKey === 'SPACE'
-              ),
-            }"
-          >
-            Space
-            <span
-              v-for="(player, pIndex) in playersState.filter(
-                (p) => p.isTyping && p.lastKey === 'SPACE'
-              )"
-              :key="player.id"
-              class="key-player-indicator"
-              :style="{ backgroundColor: getPlayerColor(pIndex) }"
-            ></span>
-          </div>
-          <div
-            class="key backspace"
-            :class="{
-              pressed: activeKey === 'BACKSPACE',
-              'other-player-press': playersState.some(
-                (p) => p.isTyping && p.lastKey === 'BACKSPACE'
-              ),
-            }"
-          >
-            ⌫
-            <span
-              v-for="(player, pIndex) in playersState.filter(
-                (p) => p.isTyping && p.lastKey === 'BACKSPACE'
-              )"
-              :key="player.id"
-              class="key-player-indicator"
-              :style="{ backgroundColor: getPlayerColor(pIndex) }"
-            ></span>
+          <div class="keyboard-visual">
+            <div class="keyboard-row">
+              <div
+                class="key"
+                v-for="letter in 'QWERTYUIOP'"
+                :key="letter"
+                :class="{
+                  pressed: activeKey === letter,
+                  'other-player-press': playersState.some(
+                    (p) => p.isTyping && p.lastKey === letter
+                  ),
+                }"
+              >
+                {{ letter }}
+                <span
+                  v-for="(player, pIndex) in playersState.filter(
+                    (p) => p.isTyping && p.lastKey === letter
+                  )"
+                  :key="player.id"
+                  class="key-player-indicator"
+                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                ></span>
+              </div>
+            </div>
+            <div class="keyboard-row">
+              <div
+                class="key"
+                v-for="letter in 'ASDFGHJKL'"
+                :key="letter"
+                :class="{
+                  pressed: activeKey === letter,
+                  'other-player-press': playersState.some(
+                    (p) => p.isTyping && p.lastKey === letter
+                  ),
+                }"
+              >
+                {{ letter }}
+                <span
+                  v-for="(player, pIndex) in playersState.filter(
+                    (p) => p.isTyping && p.lastKey === letter
+                  )"
+                  :key="player.id"
+                  class="key-player-indicator"
+                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                ></span>
+              </div>
+            </div>
+            <div class="keyboard-row">
+              <div
+                class="key"
+                v-for="letter in 'ZXCVBNM'"
+                :key="letter"
+                :class="{
+                  pressed: activeKey === letter,
+                  'other-player-press': playersState.some(
+                    (p) => p.isTyping && p.lastKey === letter
+                  ),
+                }"
+              >
+                {{ letter }}
+                <span
+                  v-for="(player, pIndex) in playersState.filter(
+                    (p) => p.isTyping && p.lastKey === letter
+                  )"
+                  :key="player.id"
+                  class="key-player-indicator"
+                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                ></span>
+              </div>
+            </div>
+            <div class="keyboard-row special-row">
+              <div
+                class="key wide"
+                :class="{
+                  pressed: activeKey === 'SPACE',
+                  'other-player-press': playersState.some(
+                    (p) => p.isTyping && p.lastKey === 'SPACE'
+                  ),
+                }"
+              >
+                Space
+                <span
+                  v-for="(player, pIndex) in playersState.filter(
+                    (p) => p.isTyping && p.lastKey === 'SPACE'
+                  )"
+                  :key="player.id"
+                  class="key-player-indicator"
+                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                ></span>
+              </div>
+              <div
+                class="key backspace"
+                :class="{
+                  pressed: activeKey === 'BACKSPACE',
+                  'other-player-press': playersState.some(
+                    (p) => p.isTyping && p.lastKey === 'BACKSPACE'
+                  ),
+                }"
+              >
+                ⌫
+                <span
+                  v-for="(player, pIndex) in playersState.filter(
+                    (p) => p.isTyping && p.lastKey === 'BACKSPACE'
+                  )"
+                  :key="player.id"
+                  class="key-player-indicator"
+                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                ></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1618,12 +1672,21 @@ const isRoomCreator = computed(() => {
         <!-- Título y Ganador -->
         <div class="results-header">
           <div class="results-title">🏆 FINAL DEL JUEGO 🏆</div>
-          <div class="winner-section" v-if="getWinner()">
+
+          <!-- Mostrar Ganador si no hay empate -->
+          <div class="winner-section" v-if="getWinner() && !isTie()">
             <div class="winner-label">GANADOR</div>
             <div class="winner-name">{{ getWinner().name }}</div>
             <div class="winner-stats">
-              {{ getWinner().wordsCompleted }} paraules correctes
+              {{ getWinner().wordsCompleted }} paraules correctes ·
+              {{ getWinner().errors }} errors
             </div>
+          </div>
+
+          <!-- Mostrar Empate si hay empate -->
+          <div class="winner-section tie-section" v-else-if="isTie()">
+            <div class="tie-label">🤝 EMPATE 🤝</div>
+            <div class="tie-message">Mismas palabras y mismos errores!</div>
           </div>
         </div>
 
@@ -1636,11 +1699,11 @@ const isRoomCreator = computed(() => {
             <div class="header-errors">Errors</div>
             <div class="header-wpm">WPM</div>
           </div>
-          
+
           <div class="table-body">
-            <div 
-              v-for="(player, index) in getFinalResults()" 
-              :key="player.id" 
+            <div
+              v-for="(player, index) in getFinalResults()"
+              :key="player.id"
               class="result-row"
               :class="{ 'winner-row': index === 0 }"
             >
@@ -1649,7 +1712,7 @@ const isRoomCreator = computed(() => {
                 <span v-if="index === 0" class="trophy-icon">👑</span>
               </div>
               <div class="name-cell">
-                <div 
+                <div
                   class="player-avatar-small"
                   :style="{ backgroundColor: getPlayerColor(index) }"
                 >
@@ -1666,9 +1729,9 @@ const isRoomCreator = computed(() => {
 
         <!-- Botones de Acción -->
         <div class="results-actions">
-          <button 
-            v-if="isRoomCreator" 
-            @click="restartGame()" 
+          <button
+            v-if="isRoomCreator"
+            @click="restartGame()"
             class="btn-restart"
           >
             🔄 VOLVER A JUGAR
@@ -1684,9 +1747,6 @@ const isRoomCreator = computed(() => {
         </div>
       </div>
     </div>
-
-    <!-- Botón flotante para volver al lobby -->
-    <button @click="emit('back-to-lobby')" class="btn-back" v-if="!gameFinished">← Lobby</button>
   </div>
 </template>
 
@@ -1858,9 +1918,8 @@ const isRoomCreator = computed(() => {
 }
 
 .game-view {
-  position: relative;
-  min-height: 100%;
-  width: 100%;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #0a192f;
@@ -1873,40 +1932,45 @@ const isRoomCreator = computed(() => {
   );
   color: #e0e0e0;
   overflow: hidden;
-  padding: 1rem;
+  padding: 0;
+  margin: 0;
   box-sizing: border-box;
-  gap: 1rem;
+  gap: 0;
   font-family: "Share Tech Mono", monospace;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 /* ===== HEADER: Tiempo, Progreso, Errores ===== */
 .game-header {
   flex: 0 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr;
   align-items: center;
-  justify-content: space-around;
-  gap: 2rem;
+  gap: clamp(1rem, 2vw, 2rem);
   background: #1a2a4a;
   backdrop-filter: blur(10px);
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  border: 2px solid #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 10px rgba(0, 240, 255, 0.05);
-  min-height: 80px;
+  padding: clamp(0.6rem, 1.2vh, 1rem) clamp(1rem, 2vw, 2rem);
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid #00f0ff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+  min-height: clamp(60px, 8vh, 80px);
 }
 
 .time-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: clamp(0.2rem, 0.5vh, 0.5rem);
   flex: 1;
-  min-width: 120px;
+  min-width: 80px;
 }
 
 .time-label {
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1914,7 +1978,7 @@ const isRoomCreator = computed(() => {
 }
 
 .time-value {
-  font-size: 1.8rem;
+  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
   font-weight: 700;
   color: #f021b9;
   text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
@@ -1925,12 +1989,13 @@ const isRoomCreator = computed(() => {
   flex: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: clamp(0.2rem, 0.5vh, 0.5rem);
   align-items: center;
+  justify-content: center;
 }
 
 .words-label {
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1938,7 +2003,7 @@ const isRoomCreator = computed(() => {
 }
 
 .words-value {
-  font-size: 1.8rem;
+  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
   font-weight: 700;
   color: #39ff14;
   text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
@@ -1949,13 +2014,14 @@ const isRoomCreator = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: clamp(0.2rem, 0.5vh, 0.5rem);
   flex: 1;
-  min-width: 120px;
+  min-width: 80px;
 }
 
 .errors-label {
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
   color: #00f0ff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1963,7 +2029,7 @@ const isRoomCreator = computed(() => {
 }
 
 .errors-value {
-  font-size: 1.8rem;
+  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
   font-weight: 700;
   color: #ff0000;
   text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
@@ -1973,105 +2039,199 @@ const isRoomCreator = computed(() => {
 /* ===== CONTENT: Texto y Input ===== */
 .game-content {
   flex: 1;
-  display: flex;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: minmax(200px, 18vw) 1fr;
+  gap: clamp(0.6rem, 1vw, 1rem);
+  align-items: stretch;
   min-height: 0;
-  overflow: hidden;
+  height: 100%;
+  /* Márgenes internos para que no pegue a los bordes de la ventana */
+  padding: clamp(0.6rem, 1vh, 1rem) clamp(1rem, 2vw, 1.5rem)
+    clamp(0.8rem, 2vh, 1.6rem);
+  box-sizing: border-box;
 }
 
-.game-content-wrapper {
+.players-panel {
+  background: rgba(26, 42, 74, 0.8);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-right: 2px solid #00f0ff;
+  border-radius: 0;
+  padding: clamp(0.9rem, 1.4vw, 1.4rem);
+  box-shadow: none;
   display: flex;
-  width: 100%;
-  gap: 2rem;
-  align-items: stretch;
-  flex: 1;
+  flex-direction: column;
+  gap: clamp(1rem, 1.5vw, 1.5rem);
+  height: 100%;
+  overflow-y: auto;
+  margin-top: clamp(0.3rem, 0.6vh, 0.6rem);
+}
+
+.game-area {
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  gap: clamp(0.8rem, 1.5vh, 1.2rem);
   min-height: 0;
+  height: 100%;
+  padding: 0;
+}
+
+.word-display-container,
+.input-container,
+.keyboard-container {
+  background: rgba(26, 42, 74, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: clamp(0.8rem, 1.2vw, 1.2rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Margen externo para separar bloques visualmente */
+  margin-top: clamp(0.2rem, 0.5vh, 0.6rem);
+}
+
+.word-display-container {
+  border: 2px solid #f021b9;
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-container {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+}
+
+.keyboard-container {
+  border: 2px solid #39ff14;
+  box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
+  padding: clamp(0.8rem, 1.2vw, 1.2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.4rem, 1vh, 0.8rem);
+}
+
+.typing-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  text-align: center;
+  outline: none;
+  font-family: "Fira Code", monospace;
 }
 
 /* === PANEL DE JUGADORES === */
 .players-panel {
-  flex: 0 0 350px;
-  min-width: 300px;
-  max-width: 400px;
+  flex: 0 0 16vw;
+  min-width: 180px;
+  max-width: 240px;
   background: rgba(26, 42, 74, 0.85);
   backdrop-filter: blur(15px);
-  border: 3px solid #39ff14;
-  border-radius: 20px;
-  padding: 1.5rem;
+  border: 2px solid #39ff14;
+  border-radius: 15px;
+  padding: 1.5vh 1vw;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.5),
-    inset 0 0 20px rgba(57, 255, 20, 0.1);
+  gap: 1.2vh;
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.4),
+    inset 0 0 15px rgba(57, 255, 20, 0.08);
   overflow: hidden;
+  height: 100%;
 }
 
 .panel-title {
-  font-size: 1.4rem;
+  font-size: clamp(1rem, 1.6vh, 1.2rem);
   font-weight: 800;
   color: #39ff14;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   margin: 0;
-  text-shadow: 0 0 20px #39ff14, 0 0 30px #39ff14;
+  text-shadow: 0 0 15px #39ff14, 0 0 25px #39ff14;
   font-family: "Share Tech Mono", monospace;
-  padding-bottom: 1rem;
+  padding-bottom: 1vh;
   border-bottom: 2px solid rgba(57, 255, 20, 0.3);
+  flex-shrink: 0;
 }
 
 .player-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.2vh;
   overflow-y: auto;
   flex: 1;
+  padding-right: 0.4vw;
+}
+
+.player-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.player-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.player-list::-webkit-scrollbar-thumb {
+  background: rgba(57, 255, 20, 0.5);
+  border-radius: 10px;
+}
+
+.player-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(57, 255, 20, 0.7);
 }
 
 .player-card {
   background: rgba(10, 25, 47, 0.7);
   border: 2px solid rgba(57, 255, 20, 0.4);
-  border-radius: 15px;
-  padding: 1.2rem 1rem;
+  border-radius: 12px;
+  padding: 1.2vh 1vw;
   transition: all 0.3s ease;
-  box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.2);
+  flex-shrink: 0;
 }
 
 .player-card.is-typing {
   border-color: #f021b9;
-  box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
+  box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
   animation: typingPulse 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes typingPulse {
   0% {
-    box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
+    box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
   }
   100% {
-    box-shadow: 0 0 35px rgba(240, 33, 185, 0.8);
+    box-shadow: 0 0 30px rgba(240, 33, 185, 0.8);
   }
 }
 
 .player-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 1vw;
+  margin-bottom: 1vh;
 }
 
 .player-avatar {
-  width: 60px;
-  height: 60px;
+  width: 5vh;
+  height: 5vh;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.4vh;
   font-weight: 800;
   color: #ffffff;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
   font-family: "Fira Code", monospace;
 }
 
@@ -2080,37 +2240,37 @@ const isRoomCreator = computed(() => {
 }
 
 .player-name {
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.5vh, 1.1rem);
   font-weight: 700;
   color: #00f0ff;
-  text-shadow: 0 0 10px #00f0ff;
+  text-shadow: 0 0 8px #00f0ff;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 0.6rem;
+  gap: clamp(0.4rem, 0.8vw, 0.6rem);
+  margin-bottom: clamp(0.3rem, 0.5vh, 0.5rem);
   font-family: "Fira Code", monospace;
 }
 
 .player-streak-icon {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 1rem;
+  gap: 0.3rem;
+  font-size: clamp(0.8rem, 1.3vh, 1rem);
   animation: flameFlicker 1s ease-in-out infinite alternate;
 }
 
 .streak-number {
-  font-size: 0.85rem;
+  font-size: clamp(0.7rem, 1.2vh, 0.85rem);
   font-weight: 800;
   color: #ffd700;
-  text-shadow: 0 0 8px #ff6600;
+  text-shadow: 0 0 6px #ff6600;
 }
 
 .player-stats {
-  font-size: 1rem;
+  font-size: clamp(0.8rem, 1.3vh, 0.95rem);
   color: #39ff14;
   font-weight: 600;
-  text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.6);
   font-family: "Share Tech Mono", monospace;
 }
 
@@ -2118,20 +2278,20 @@ const isRoomCreator = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 1.2vh, 0.9rem);
   font-family: "Share Tech Mono", monospace;
 }
 
 .player-words {
   color: #00f0ff;
   font-weight: 600;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
 }
 
 .player-errors {
   color: #ff6666;
   font-weight: 600;
-  text-shadow: 0 0 8px rgba(255, 102, 102, 0.6);
+  text-shadow: 0 0 6px rgba(255, 102, 102, 0.6);
 }
 
 /* === ÁREA DE TEXTO PRINCIPAL === */
@@ -2139,43 +2299,47 @@ const isRoomCreator = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.5vh;
   align-items: center;
   justify-content: center;
   min-height: 0;
+  height: 100%;
 }
 
 .word-display {
   background: rgba(26, 42, 74, 0.85);
   backdrop-filter: blur(15px);
-  padding: 3rem 2.5rem;
-  border-radius: 25px;
+  padding: 3vh 2.5vw;
+  border-radius: 20px;
   border: 3px solid #00f0ff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 800px;
-  box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
-    inset 0 0 30px rgba(0, 240, 255, 0.1);
-  gap: 3rem;
-  min-height: 400px;
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.4),
+    inset 0 0 25px rgba(0, 240, 255, 0.1);
+  gap: 3.5vh;
+  flex: 1;
 }
 
 .current-word {
-  font-size: 4rem;
+  font-size: clamp(2rem, 4vw, 3.5rem);
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: 0.3em;
+  letter-spacing: clamp(0.15em, 0.2em, 0.25em);
   font-family: "Fira Code", monospace;
   text-align: center;
   line-height: 1.2;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-  min-height: 150px;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(0.12em, 0.18em, 0.22em);
+  padding: 1rem;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .current-word span {
@@ -2184,16 +2348,16 @@ const isRoomCreator = computed(() => {
 }
 
 .word-counter {
-  font-size: 1.3rem;
+  font-size: clamp(1rem, 1.8vh, 1.3rem);
   color: #39ff14;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-family: "Share Tech Mono", monospace;
   font-weight: 700;
-  text-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
+  text-shadow: 0 0 12px #39ff14, 0 0 25px #39ff14;
   background: rgba(57, 255, 20, 0.1);
-  padding: 1rem 1.5rem;
-  border-radius: 15px;
+  padding: 1vh 1.5vw;
+  border-radius: 12px;
   border: 2px solid rgba(57, 255, 20, 0.3);
 }
 
@@ -2206,94 +2370,82 @@ const isRoomCreator = computed(() => {
 
 .typing-input {
   width: 100%;
-  max-width: 600px;
-  min-width: 300px;
-  padding: 1.5rem 2rem;
-  font-size: 1.3rem;
+  padding: 1.5vh 2vw;
+  font-size: clamp(1.1rem, 2vh, 1.4rem);
   font-family: "Fira Code", monospace;
   font-weight: 600;
   background: rgba(10, 25, 47, 0.95);
   color: #00f0ff;
   border: 3px solid #00f0ff;
-  border-radius: 20px;
+  border-radius: 15px;
   outline: none;
   transition: all 0.4s ease;
-  margin: 0 auto;
   box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.4),
-    inset 0 0 20px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4),
+    inset 0 0 15px rgba(0, 240, 255, 0.1);
   letter-spacing: 0.1em;
 }
 
 .typing-input:focus {
   border-color: #f021b9;
-  box-shadow: 0 0 40px rgba(240, 33, 185, 0.8),
-    inset 0 0 25px rgba(240, 33, 185, 0.15);
+  box-shadow: 0 0 35px rgba(240, 33, 185, 0.8),
+    inset 0 0 20px rgba(240, 33, 185, 0.15);
   background: rgba(10, 25, 47, 1);
   color: #f021b9;
-  transform: translateY(-3px);
+  text-shadow: 0 0 10px #f021b9;
 }
 
 .typing-input::placeholder {
-  color: rgba(0, 240, 255, 0.4);
-  font-family: "Share Tech Mono", monospace;
+  color: rgba(0, 240, 255, 0.5);
 }
 
 /* ===== FOOTER: Teclado y Botón ===== */
 .game-footer {
   flex: 0 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: 16vw 2vw 1fr;
   align-items: center;
-  justify-content: center;
   position: relative;
   width: 100%;
-  height: 250px;
+  height: 20vh;
+  padding: 0 0 2vh 0;
+  margin-top: auto;
 }
 
 .keyboard-visual {
-  background: rgba(26, 42, 74, 0.9);
-  backdrop-filter: blur(15px);
-  padding: 1.5rem 2rem;
-  border-radius: 25px;
-  border: 3px solid #f021b9;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 1200px;
-  width: 100%;
-  box-shadow: 0 0 40px rgba(240, 33, 185, 0.5),
-    inset 0 0 25px rgba(240, 33, 185, 0.1);
-  margin: 0 auto;
-  box-sizing: border-box;
-  height: 100%;
+  gap: clamp(0.5rem, 1vh, 0.8rem);
+  justify-content: center;
 }
 
 .keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 0.8rem;
-  flex: 1;
+  gap: clamp(0.4rem, 0.8vw, 0.6rem);
+  min-height: clamp(48px, 6vh, 64px);
 }
 
 .key {
-  min-width: 60px;
-  height: 50px;
-  flex: 1;
-  max-width: 80px;
+  min-width: clamp(48px, 5vw, 72px);
+  height: 100%;
+  flex: 0 0 auto;
+  max-width: clamp(60px, 6vw, 80px);
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
-  border: 3px solid #00f0ff;
-  border-radius: 15px;
-  font-size: 1.2rem;
+  border: 2px solid #00f0ff;
+  border-radius: 6px;
+  font-size: clamp(0.85rem, 1.6vh, 1.05rem);
   font-weight: 700;
   color: #00f0ff;
   transition: all 0.2s ease;
   cursor: default;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4),
-    inset 0 0 10px rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3),
+    inset 0 0 8px rgba(0, 240, 255, 0.08);
   font-family: "Share Tech Mono", monospace;
   position: relative;
 }
@@ -2301,44 +2453,85 @@ const isRoomCreator = computed(() => {
 .key:hover {
   background: linear-gradient(145deg, #1f3557, #142135);
   border-color: #f021b9;
-  transform: translateY(-5px);
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(240, 33, 185, 0.7);
   color: #f021b9;
 }
 
 /* Tecla presionada (efecto cuando el usuario pulsa una tecla física) */
 .key.pressed {
-  transform: translateY(4px) scale(0.95);
+  transform: translateY(2px) scale(0.95);
   background: linear-gradient(180deg, #f021b9, #ff00ff);
   color: #ffffff;
-  box-shadow: 0 0 40px rgba(240, 33, 185, 1) inset,
-    0 0 35px rgba(240, 33, 185, 0.9);
+  box-shadow: 0 0 35px rgba(240, 33, 185, 1) inset,
+    0 0 30px rgba(240, 33, 185, 0.9);
   border-color: #ffffff;
-  text-shadow: 0 0 10px #ffffff;
+  text-shadow: 0 0 8px #ffffff;
 }
 
 .key.wide {
-  flex: 3;
-  min-width: 300px;
-  max-width: none;
+  flex: 0 0 auto;
+  min-width: clamp(120px, 16vw, 200px);
+  max-width: clamp(200px, 28vw, 280px);
 }
+
 .key.backspace {
-  flex: 1.5;
-  min-width: 130px;
-  font-size: 1.4rem;
+  flex: 0 0 auto;
+  min-width: clamp(72px, 8vw, 110px);
+  font-size: clamp(0.9rem, 1.7vh, 1.1rem);
 }
 
 /* Indicadores de otros jugadores en las teclas */
 .key-player-indicator {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 20px;
-  height: 20px;
+  top: -5px;
+  right: -5px;
+  width: 1.6vh;
+  height: 1.6vh;
   border-radius: 50%;
   border: 2px solid #ffffff;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
   z-index: 1;
+}
+
+/* Etiqueta superior del teclado (tecla pulsada) */
+.keyboard-label {
+  width: 100%;
+  min-height: clamp(22px, 3vh, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: clamp(0.2rem, 0.6vh, 0.6rem);
+}
+
+.keyboard-label-text {
+  color: #ffd700;
+  font-family: "Share Tech Mono", monospace;
+  font-weight: 800;
+  font-size: clamp(0.9rem, 1.8vh, 1.2rem);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 12px #ffd700, 0 0 20px rgba(255, 215, 0, 0.7);
+}
+
+.keyboard-label-placeholder {
+  opacity: 0;
+}
+
+/* Centrado de barra espaciadora y ajuste de fila especial */
+.keyboard-row.special-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.keyboard-row.special-row .key.wide {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.keyboard-row.special-row .key.backspace {
+  grid-column: 3;
+  justify-self: end;
 }
 
 /* Estados de los caracteres del texto */
@@ -2373,7 +2566,8 @@ const isRoomCreator = computed(() => {
 }
 
 @keyframes errorShake {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1.1) translateX(0);
   }
   25% {
@@ -2409,60 +2603,117 @@ const isRoomCreator = computed(() => {
 }
 
 .btn-back {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: rgba(26, 42, 74, 0.9);
+  background: rgba(0, 240, 255, 0.15);
   border: 2px solid #00f0ff;
   color: #00f0ff;
-  padding: 1rem 1.5rem;
-  border-radius: 15px;
-  font-size: 1rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-weight: 600;
+  padding: clamp(0.5rem, 1vh, 0.7rem) clamp(1rem, 2vw, 1.5rem);
+  border-radius: 8px;
+  font-size: clamp(0.8rem, 1.2vh, 0.95rem);
+  font-family: "Share Tech Mono", monospace;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
   backdrop-filter: blur(10px);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .btn-back:hover {
   background: rgba(240, 33, 185, 0.2);
   border-color: #f021b9;
   color: #f021b9;
-  transform: translateX(-5px) scale(1.05);
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.6);
+  transform: translateX(-4px) scale(1.05);
+  box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
 }
 
 /* === RESPONSIVE BREAKPOINTS PARA LAYOUT === */
 @media (max-width: 1200px) {
+  .game-view {
+    padding: 0.8vh 1vw;
+    gap: 1vh;
+  }
+
   .game-content-wrapper {
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.2vh;
   }
-  
+
   .players-panel {
     flex: 0 0 auto;
     min-width: auto;
     max-width: none;
     width: 100%;
-    max-height: 300px;
+    height: 16vh;
+    flex-direction: row;
   }
-  
+
   .player-list {
     flex-direction: row;
     overflow-x: auto;
-    gap: 2rem;
+    gap: 1.2vw;
+    padding-bottom: 0.5vh;
   }
-  
+
   .player-card {
-    min-width: 250px;
+    min-width: 180px;
     flex-shrink: 0;
   }
-  
+
   .word-display {
-    max-width: 1000px;
+    max-width: 95%;
+  }
+
+  .keyboard-visual {
+    margin-left: 0;
+    width: 100%;
+    padding: 1.2vh 1.5vw;
+  }
+
+  .game-footer {
+    height: 16vh;
+  }
+
+  .game-content {
+    height: calc(100vh - 10vh - 16vh - 3vh);
+  }
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    gap: 1vw;
+    padding: 0.8vh 1.2vw;
+    flex-wrap: nowrap;
+  }
+
+  .time-section,
+  .words-section,
+  .errors-section {
+    min-width: 60px;
+  }
+
+  .current-word {
+    font-size: clamp(2.2rem, 5.5vh, 3.8rem);
+    letter-spacing: 0.2em;
+  }
+
+  .player-card {
+    min-width: 160px;
+  }
+
+  .key {
+    min-width: 3.5vw;
+    max-width: 5vw;
+    font-size: 1.2vh;
+  }
+
+  .key.wide {
+    min-width: 24vw;
+  }
+
+  .key.backspace {
+    min-width: 7vw;
   }
 }
 
@@ -2872,12 +3123,15 @@ const isRoomCreator = computed(() => {
 }
 
 .results-container {
-  background: linear-gradient(135deg, rgba(26, 42, 74, 0.95), rgba(15, 30, 50, 0.95));
+  background: linear-gradient(
+    135deg,
+    rgba(26, 42, 74, 0.95),
+    rgba(15, 30, 50, 0.95)
+  );
   border: 4px solid #f021b9;
   border-radius: 25px;
   padding: 3rem 2.5rem;
-  box-shadow: 
-    0 0 60px rgba(240, 33, 185, 0.8),
+  box-shadow: 0 0 60px rgba(240, 33, 185, 0.8),
     inset 0 0 40px rgba(240, 33, 185, 0.1);
   max-width: 800px;
   width: 100%;
@@ -2891,13 +3145,11 @@ const isRoomCreator = computed(() => {
 
 @keyframes containerGlow {
   0% {
-    box-shadow: 
-      0 0 60px rgba(240, 33, 185, 0.8),
+    box-shadow: 0 0 60px rgba(240, 33, 185, 0.8),
       inset 0 0 40px rgba(240, 33, 185, 0.1);
   }
   100% {
-    box-shadow: 
-      0 0 80px rgba(240, 33, 185, 1),
+    box-shadow: 0 0 80px rgba(240, 33, 185, 1),
       inset 0 0 50px rgba(240, 33, 185, 0.15);
   }
 }
@@ -2928,7 +3180,11 @@ const isRoomCreator = computed(() => {
 }
 
 .winner-section {
-  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(0, 240, 255, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(57, 255, 20, 0.2),
+    rgba(0, 240, 255, 0.2)
+  );
   border: 3px solid #39ff14;
   border-radius: 20px;
   padding: 2rem;
@@ -2974,6 +3230,47 @@ const isRoomCreator = computed(() => {
   color: #ffd700;
   text-shadow: 0 0 15px #ffd700;
   font-family: "Share Tech Mono", monospace;
+}
+
+/* === ESTILOS PARA EMPATE === */
+.tie-section {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.2),
+    rgba(240, 33, 185, 0.2)
+  );
+  border: 3px solid #ffd700;
+  animation: tieGlow 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes tieGlow {
+  0% {
+    border-color: #ffd700;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+  }
+  100% {
+    border-color: #f021b9;
+    box-shadow: 0 0 50px rgba(240, 33, 185, 0.8);
+  }
+}
+
+.tie-label {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin-bottom: 1rem;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 25px #ffd700, 0 0 50px #ffd700;
+}
+
+.tie-message {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #f021b9;
+  text-shadow: 0 0 15px #f021b9;
+  font-family: "Fira Code", monospace;
 }
 
 /* === TABLA DE RESULTADOS === */
@@ -3022,7 +3319,11 @@ const isRoomCreator = computed(() => {
 }
 
 .result-row.winner-row {
-  background: linear-gradient(135deg, rgba(57, 255, 20, 0.15), rgba(255, 215, 0, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(57, 255, 20, 0.15),
+    rgba(255, 215, 0, 0.15)
+  );
   border: 2px solid #ffd700;
   border-left: 6px solid #39ff14;
   margin: 0.5rem;
@@ -3050,8 +3351,13 @@ const isRoomCreator = computed(() => {
 }
 
 @keyframes crownSpin {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(15deg) scale(1.1); }
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(15deg) scale(1.1);
+  }
 }
 
 .name-cell {
@@ -3137,14 +3443,22 @@ const isRoomCreator = computed(() => {
 }
 
 .btn-restart {
-  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(0, 240, 255, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(57, 255, 20, 0.2),
+    rgba(0, 240, 255, 0.2)
+  );
   border-color: #39ff14;
   color: #39ff14;
   box-shadow: 0 0 25px rgba(57, 255, 20, 0.5);
 }
 
 .btn-restart:hover {
-  background: linear-gradient(135deg, rgba(57, 255, 20, 0.4), rgba(0, 240, 255, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(57, 255, 20, 0.4),
+    rgba(0, 240, 255, 0.4)
+  );
   border-color: #00f0ff;
   color: #00f0ff;
   transform: translateY(-5px) scale(1.05);
@@ -3153,14 +3467,22 @@ const isRoomCreator = computed(() => {
 }
 
 .btn-exit {
-  background: linear-gradient(135deg, rgba(240, 33, 185, 0.2), rgba(255, 100, 100, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(240, 33, 185, 0.2),
+    rgba(255, 100, 100, 0.2)
+  );
   border-color: #f021b9;
   color: #f021b9;
   box-shadow: 0 0 25px rgba(240, 33, 185, 0.5);
 }
 
 .btn-exit:hover {
-  background: linear-gradient(135deg, rgba(240, 33, 185, 0.4), rgba(255, 100, 100, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgba(240, 33, 185, 0.4),
+    rgba(255, 100, 100, 0.4)
+  );
   border-color: #ff6464;
   color: #ff6464;
   transform: translateY(-5px) scale(1.05);

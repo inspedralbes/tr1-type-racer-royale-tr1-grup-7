@@ -10,14 +10,14 @@ const props = defineProps({
 
 const emit = defineEmits(["createRoom", "back", "goToRoomList", "notify"]);
 
-// Configuraciones de la sala para PALABRAS (simplificado)
+// Configuraciones completas para TEXTO
 const roomName = ref("");
 const maxPlayers = ref(4);
 const roomPassword = ref("");
-// timeLimit almacenado en MINUTOS si es >=1, pero añadimos opciones cortas en segundos.
-// Para mantener compatibilidad con el backend (usa minutos * 60 al entrar al juego),
-// guardaremos valores menores a 1 como fracción de minuto (p.ej. 15s = 0.25, 30s = 0.5).
 const timeLimit = ref(3);
+const numRounds = ref(3);
+const difficulty = ref("normal");
+const theme = ref("aleatori");
 
 function handleCreateRoom() {
   if (!roomName.value.trim()) {
@@ -27,18 +27,17 @@ function handleCreateRoom() {
     });
     return;
   }
+
   const roomConfig = {
     roomName: roomName.value,
     maxPlayers: maxPlayers.value,
     password: roomPassword.value,
-    isPrivate: false, // Siempre pública
-    // Enviamos timeLimit como minutos (puede ser fracción para segundos)
+    isPrivate: false,
     timeLimit: timeLimit.value,
-    // Valores fijos para modo palabras
-    gameMode: "palabras",
-    numRounds: 1,
-    difficulty: "normal",
-    theme: "aleatori",
+    numRounds: numRounds.value,
+    difficulty: difficulty.value,
+    theme: theme.value,
+    gameMode: "texto", // Forzar modo texto
   };
   emit("createRoom", roomConfig);
 }
@@ -52,7 +51,7 @@ function handleBack() {
   <div class="create-room-container">
     <div class="header-section">
       <button @click="handleBack" class="btn-back">← Atrás</button>
-      <h2 class="page-title">Crear sala - PALABRAS</h2>
+      <h2 class="page-title">Crear sala - TEXTO</h2>
     </div>
 
     <div class="content-wrapper">
@@ -63,7 +62,7 @@ function handleBack() {
           <input
             v-model="roomName"
             type="text"
-            placeholder="Escribe el nombre de la sala de palabras..."
+            placeholder="Escribe el nombre de la sala de texto..."
             class="room-input"
             @keyup.enter="handleCreateRoom"
             autofocus
@@ -96,23 +95,52 @@ function handleBack() {
 
           <!-- Límite de tiempo -->
           <div class="config-box">
-            <label class="config-label">Límite de tiempo</label>
+            <label class="config-label">Límite de tiempo (minutos)</label>
             <select v-model.number="timeLimit" class="config-select">
-              <!-- Opciones cortas en segundos representadas como fracción de minuto -->
-              <option :value="0.25">15 segundos</option>
-              <option :value="0.5">30 segundos</option>
               <option :value="1">1 minuto</option>
-              <option :value="2">2 minutos</option>
               <option :value="3">3 minutos</option>
               <option :value="5">5 minutos</option>
               <option :value="10">10 minutos</option>
             </select>
           </div>
 
+          <!-- Número de rondas -->
+          <div class="config-box">
+            <label class="config-label">Número de rondas</label>
+            <select v-model.number="numRounds" class="config-select">
+              <option :value="1">1 ronda</option>
+              <option :value="3">3 rondas</option>
+              <option :value="5">5 rondas</option>
+              <option :value="7">7 rondas</option>
+            </select>
+          </div>
+
+          <!-- Dificultad -->
+          <div class="config-box">
+            <label class="config-label">Dificultad</label>
+            <select v-model="difficulty" class="config-select">
+              <option value="facil">Fácil</option>
+              <option value="normal">Normal</option>
+              <option value="dificil">Difícil</option>
+            </select>
+          </div>
+
+          <!-- Temática -->
+          <div class="config-box">
+            <label class="config-label">Temática</label>
+            <select v-model="theme" class="config-select">
+              <option value="aleatori">Aleatorio</option>
+              <option value="animals">Animales</option>
+              <option value="pel·licules">Películas</option>
+              <option value="programacio">Programación</option>
+              <option value="esports">Deportes</option>
+            </select>
+          </div>
+
           <!-- Botón Crear (grande, abajo) -->
           <div class="config-box create-button-box">
             <button @click="handleCreateRoom" class="btn-create">
-              CREAR SALA PALABRAS
+              CREAR SALA TEXTO
             </button>
           </div>
         </div>
@@ -200,12 +228,11 @@ function handleBack() {
 
 .page-title {
   font-size: clamp(2rem, 4vw, 3rem);
-  color: #f021b9;
+  color: #ff6600;
   font-weight: 700;
   margin: 0;
   font-family: "Share Tech Mono", monospace;
-  text-shadow: 0 0 10px rgba(240, 33, 185, 0.8),
-    0 0 20px rgba(240, 33, 185, 0.5);
+  text-shadow: 0 0 10px rgba(255, 102, 0, 0.8), 0 0 20px rgba(255, 102, 0, 0.5);
   letter-spacing: 0.15rem;
 }
 
@@ -231,11 +258,11 @@ function handleBack() {
 .name-section {
   background: rgba(26, 42, 74, 0.8);
   backdrop-filter: blur(10px);
-  border: 2px solid #f021b9;
+  border: 2px solid #ff6600;
   border-radius: 16px;
   padding: 2vh 3vw;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.3),
-    inset 0 0 20px rgba(240, 33, 185, 0.05);
+  box-shadow: 0 0 30px rgba(255, 102, 0, 0.3),
+    inset 0 0 20px rgba(255, 102, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: 1.5vh;
@@ -271,16 +298,16 @@ function handleBack() {
 }
 
 .room-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.4),
-    inset 0 0 15px rgba(240, 33, 185, 0.1);
-  color: #f021b9;
+  border-color: #ff6600;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.4),
+    inset 0 0 15px rgba(255, 102, 0, 0.1);
+  color: #ff6600;
   transform: scale(1.01);
 }
 
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5vh 1.5vw;
 }
 
@@ -298,8 +325,8 @@ function handleBack() {
 }
 
 .config-box:hover {
-  border-color: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.3);
+  border-color: #ff6600;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.3);
 }
 
 .create-button-box {
@@ -352,10 +379,10 @@ function handleBack() {
 
 .config-select:focus,
 .config-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 15px rgba(240, 33, 185, 0.3),
-    inset 0 0 10px rgba(240, 33, 185, 0.1);
-  color: #f021b9;
+  border-color: #ff6600;
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.3),
+    inset 0 0 10px rgba(255, 102, 0, 0.1);
+  color: #ff6600;
 }
 
 .radio-group {
@@ -385,7 +412,7 @@ function handleBack() {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #f021b9;
+  accent-color: #ff6600;
 }
 
 .btn-create {
@@ -401,10 +428,10 @@ function handleBack() {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.2rem;
-  background: linear-gradient(135deg, #39ff14, #00f0ff);
-  color: #0a192f;
+  background: linear-gradient(135deg, #ff6600, #f021b9);
+  color: #ffffff;
   border: 2px solid transparent;
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 30px rgba(255, 102, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
@@ -431,7 +458,7 @@ function handleBack() {
 
 .btn-create:hover {
   transform: scale(1.02);
-  box-shadow: 0 0 40px rgba(57, 255, 20, 0.6);
+  box-shadow: 0 0 40px rgba(255, 102, 0, 0.6);
 }
 
 .side-buttons {
@@ -479,7 +506,7 @@ function handleBack() {
 
 @media (max-width: 1200px) {
   .config-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
