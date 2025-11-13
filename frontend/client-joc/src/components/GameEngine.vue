@@ -43,6 +43,8 @@ let tempsIniciParaula = 0;
 const gameInputRef = ref(null);
 const isShaking = ref(false);
 const tempsTranscorregut = ref(0);
+const tempsRestant = ref(60); // Tiempo restante en segundos (60s por defecto)
+const TEMPS_TOTAL = 60; // Duración total del juego en segundos
 let cronometreGlobal = null;
 let tempsIniciPartida = 0;
 
@@ -50,6 +52,14 @@ let tempsIniciPartida = 0;
 const errorsTotals = ref(0);
 // --- NOU: Estat per a la lletra incorrecta ---
 const lletraActivaIncorrecta = ref(false);
+// --- NOU: Variables para WPM ---
+const caracteresEscrits = ref(0);
+const wpm = computed(() => {
+  if (tempsTranscorregut.value === 0) return 0;
+  const minuts = tempsTranscorregut.value / 60;
+  const paraules = caracteresEscrits.value / 5; // Estándar: 5 caracteres = 1 palabra
+  return Math.round(paraules / minuts);
+});
 
 const paraulaActiva = computed(() => {
   if (estatPartida.value === 'jugant' && estatDelJoc.value.indexParaulaActiva < estatDelJoc.value.paraules.length) {
@@ -116,12 +126,21 @@ function handleGameKeydown(event) {
       tempsIniciPartida = Date.now();
       cronometreGlobal = setInterval(() => {
         tempsTranscorregut.value = Math.floor((Date.now() - tempsIniciPartida) / 1000);
+        tempsRestant.value = Math.max(0, TEMPS_TOTAL - tempsTranscorregut.value);
+        
+        // Finalizar el juego cuando se acabe el tiempo
+        if (tempsRestant.value <= 0) {
+          estatPartida.value = 'acabat';
+          clearInterval(cronometreGlobal);
+          cronometreGlobal = null;
+        }
       }, 1000);
     }
 
     // Avancem l'estat
     lletraActivaIncorrecta.value = false; // Netegem qualsevol error visual
     estatDelJoc.value.textEntrat += lletraPremuda;
+    caracteresEscrits.value++; // Incrementar contador de caracteres
 
     // 8. Comprovem si hem acabat la paraula
     if (estatDelJoc.value.textEntrat === paraulaText) {
@@ -134,6 +153,7 @@ function handleGameKeydown(event) {
       paraulaActiva.value.estat = 'completada';
       estatDelJoc.value.indexParaulaActiva++;
       estatDelJoc.value.textEntrat = '';
+      caracteresEscrits.value++; // Contar el espacio entre palabras
       tempsIniciParaula = 0;
       lletraActivaIncorrecta.value = false; // Assegurem que no hi ha error visual
 
@@ -215,9 +235,11 @@ function reiniciarJoc() {
   clearInterval(cronometreGlobal);
   cronometreGlobal = null;
   tempsTranscorregut.value = 0;
+  tempsRestant.value = TEMPS_TOTAL; // Resetear tiempo restante
   tempsIniciPartida = 0;
   lletraActivaIncorrecta.value = false;
   errorsTotals.value = 0; // <-- NOU: Reiniciem el comptador general
+  caracteresEscrits.value = 0; // Resetear caracteres escritos
   
   estatDelJoc.value = crearEstatInicial();
   tempsIniciParaula = 0;
@@ -238,8 +260,12 @@ function reiniciarJoc() {
         
         <div class="live-stats-container">
           <div class="stat-item">
-            <span class="stat-label">Temps</span>
-            <span class="stat-value">{{ tempsTranscorregut }}s</span>
+            <span class="stat-label">Temps Restant</span>
+            <span class="stat-value" :class="{ 'warning': tempsRestant <= 10 }">{{ tempsRestant }}s</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">WPM</span>
+            <span class="stat-value">{{ wpm }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Errors</span>
@@ -297,6 +323,10 @@ function reiniciarJoc() {
           <div>
             <span class="metric-label">Temps Total</span>
             <span class="metric-value">{{ tempsTranscorregut }}s</span>
+          </div>
+          <div>
+            <span class="metric-label">WPM Final</span>
+            <span class="metric-value">{{ wpm }}</span>
           </div>
           <div>
             <span class="metric-label">Total Errors</span>
@@ -388,6 +418,19 @@ function reiniciarJoc() {
 }
 .stat-value.error {
   color: #ff3b3b;
+}
+.stat-value.warning {
+  color: #ff9500;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* Contenidor de paraules */
