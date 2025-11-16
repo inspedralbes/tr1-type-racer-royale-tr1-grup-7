@@ -1,501 +1,433 @@
 <script setup>
-import { ref } from "vue";
+import { ref } from 'vue';
 
 const props = defineProps({
-  playerName: {
-    type: String,
-    default: "",
-  },
+  playerName: { type: String, default: '' }
 });
 
-const emit = defineEmits(["createRoom", "back", "goToRoomList", "notify"]);
+const emit = defineEmits(['createRoom', 'back', 'goToRoomList', 'notify']);
 
-// Configuraciones de la sala para PALABRAS (simplificado)
-const roomName = ref("");
+// Configuración sala (modo PALABRAS)
+const roomName = ref('');
 const maxPlayers = ref(4);
-const roomPassword = ref("");
-// timeLimit almacenado en MINUTOS si es >=1, pero añadimos opciones cortas en segundos.
-// Para mantener compatibilidad con el backend (usa minutos * 60 al entrar al juego),
-// guardaremos valores menores a 1 como fracción de minuto (p.ej. 15s = 0.25, 30s = 0.5).
-const timeLimit = ref(3);
+const roomPassword = ref('');
+const timeLimit = ref(3); // en minutos (0.25=15s, 0.5=30s)
 
 function handleCreateRoom() {
   if (!roomName.value.trim()) {
-    emit("notify", {
-      message: "Por favor, introduce un nombre para la sala.",
-      type: "warning",
-    });
+    emit('notify', { message: 'Introdueix un nom per a la sala.', type: 'warning' });
     return;
   }
+
   const roomConfig = {
+    gameMode: 'palabras',
     roomName: roomName.value,
     maxPlayers: maxPlayers.value,
     password: roomPassword.value,
-    isPrivate: false, // Siempre pública
-    // Enviamos timeLimit como minutos (puede ser fracción para segundos)
+    isPrivate: false, // siempre pública en modo palabras
     timeLimit: timeLimit.value,
-    // Valores fijos para modo palabras
-    gameMode: "palabras",
     numRounds: 1,
-    difficulty: "normal",
-    theme: "aleatori",
+    difficulty: 'normal',
+    theme: 'aleatori'
   };
-  emit("createRoom", roomConfig);
+
+  emit('createRoom', roomConfig);
 }
 
 function handleBack() {
-  emit("back");
+  emit('back');
 }
 </script>
 
 <template>
   <div class="create-room-container">
+    <!-- Header con 2 columnas: título centrado | botón cancelar -->
     <div class="header-section">
-      <button @click="handleBack" class="btn-back">← Atrás</button>
-      <h2 class="page-title">Crear sala - PALABRAS</h2>
+      <div class="header-center">
+        <h2 class="page-title">CONFIGURACIÓ DE LA PARTIDA</h2>
+      </div>
+      <div class="header-right">
+        <button @click="handleBack" class="btn-cancel">✕ CANCEL·LAR</button>
+      </div>
     </div>
 
     <div class="content-wrapper">
-      <!-- Panel central con nombre de sala -->
-      <div class="center-panel">
-        <div class="name-section">
-          <label class="input-label">Nombre sala</label>
-          <input
-            v-model="roomName"
-            type="text"
-            placeholder="Escribe el nombre de la sala de palabras..."
-            class="room-input"
-            @keyup.enter="handleCreateRoom"
-            autofocus
-          />
+      <div class="main-panel">
+        <!-- Borde neon superior -->
+        <div class="neon-border neon-border-top"></div>
+
+        <!-- Línea 1: Nom de la Sala (ancho completo) -->
+        <div class="config-row-1">
+          <div class="config-box">
+            <label class="config-label">📝 Nom de la Sala</label>
+            <input
+              v-model="roomName"
+              type="text"
+              placeholder="Introdueix el nom de la sala..."
+              class="config-input"
+              @keyup.enter="handleCreateRoom"
+              autofocus
+            />
+          </div>
         </div>
 
-        <!-- Grid de configuraciones -->
-        <div class="config-grid">
-          <!-- Máximo jugadores -->
+        <!-- Línea 2: Jugadors | Temps | Contrasenya (3 columnas) -->
+        <div class="config-row-2">
           <div class="config-box">
-            <label class="config-label">Número máximo de jugadores</label>
+            <label class="config-label">👥 Jugadors</label>
             <select v-model.number="maxPlayers" class="config-select">
-              <option :value="2">2 jugadores</option>
-              <option :value="4">4 jugadores</option>
-              <option :value="6">6 jugadores</option>
-              <option :value="8">8 jugadores</option>
+              <option :value="2">2 jugadors</option>
+              <option :value="4">4 jugadors</option>
+              <option :value="6">6 jugadors</option>
+              <option :value="8">8 jugadors</option>
             </select>
           </div>
 
-          <!-- Contraseña -->
           <div class="config-box">
-            <label class="config-label">Contraseña (opcional)</label>
+            <label class="config-label">⏱️ Temps</label>
+            <select v-model.number="timeLimit" class="config-select">
+              <option :value="0.25">15 segons</option>
+              <option :value="0.5">30 segons</option>
+              <option :value="1">1 minut</option>
+              <option :value="2">2 minuts</option>
+              <option :value="3">3 minuts</option>
+              <option :value="5">5 minuts</option>
+              <option :value="10">10 minuts</option>
+            </select>
+          </div>
+
+          <div class="config-box">
+            <label class="config-label">🔒 Contrasenya</label>
             <input
               v-model="roomPassword"
               type="text"
-              placeholder="Sin contraseña"
+              placeholder="Sense contrasenya"
               class="config-input"
             />
           </div>
-
-          <!-- Límite de tiempo -->
-          <div class="config-box">
-            <label class="config-label">Límite de tiempo</label>
-            <select v-model.number="timeLimit" class="config-select">
-              <!-- Opciones cortas en segundos representadas como fracción de minuto -->
-              <option :value="0.25">15 segundos</option>
-              <option :value="0.5">30 segundos</option>
-              <option :value="1">1 minuto</option>
-              <option :value="2">2 minutos</option>
-              <option :value="3">3 minutos</option>
-              <option :value="5">5 minutos</option>
-              <option :value="10">10 minutos</option>
-            </select>
-          </div>
-
-          <!-- Botón Crear (grande, abajo) -->
-          <div class="config-box create-button-box">
-            <button @click="handleCreateRoom" class="btn-create">
-              CREAR SALA PALABRAS
-            </button>
-          </div>
         </div>
-      </div>
 
-      <!-- Botones laterales -->
-      <div class="side-buttons">
-        <button @click="emit('goToRoomList')" class="btn-action btn-lista">
-          LISTA
-        </button>
-        <button @click="emit('goToRoomList')" class="btn-action btn-unirse">
-          UNIRSE
-        </button>
+        <!-- Bordes neon inferiores -->
+        <div class="neon-border neon-border-bottom-left"></div>
+        <div class="neon-border neon-border-bottom-right"></div>
       </div>
+    </div>
+
+    <div class="footer-buttons">
+      <button @click="handleCreateRoom" class="btn-create">CREAR SALA</button>
     </div>
   </div>
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* Contenedor principal */
 .create-room-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100vw;
   height: 100vh;
-  padding: 2vh 2vw;
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1654 100%);
   display: flex;
   flex-direction: column;
-  gap: 2vh;
-  background: #0a192f;
   overflow: hidden;
+  position: relative;
+  font-family: "Share Tech Mono", monospace;
 }
 
-.create-room-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(
-      circle at 20% 30%,
-      rgba(240, 33, 185, 0.1) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 80% 70%,
-      rgba(0, 240, 255, 0.1) 0%,
-      transparent 50%
-    );
-  pointer-events: none;
-}
-
+/* Header con 2 columnas */
 .header-section {
   display: flex;
   align-items: center;
-  gap: 2vw;
+  justify-content: center;
+  padding: 1.2rem 2rem;
+  background: rgba(26, 11, 46, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
-.btn-back {
-  background: rgba(26, 42, 74, 0.6);
-  border: 2px solid #00f0ff;
-  color: #00f0ff;
-  padding: 1vh 2vw;
-  border-radius: 8px;
-  font-size: clamp(0.9rem, 1.1vw, 1rem);
-  font-family: "Share Tech Mono", monospace;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 0.1rem;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
-.btn-back:hover {
-  background: rgba(240, 33, 185, 0.2);
-  border-color: #f021b9;
-  color: #f021b9;
-  transform: translateX(-3px);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.4);
+.header-right {
+  position: absolute;
+  right: 2rem;
 }
 
 .page-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  color: #f021b9;
-  font-weight: 700;
+  color: #ffffff;
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.3rem;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.8),
+               0 0 40px rgba(240, 33, 185, 0.6);
   margin: 0;
-  font-family: "Share Tech Mono", monospace;
-  text-shadow: 0 0 10px rgba(240, 33, 185, 0.8),
-    0 0 20px rgba(240, 33, 185, 0.5);
-  letter-spacing: 0.15rem;
 }
 
 .content-wrapper {
   display: flex;
-  gap: 2vw;
   flex: 1;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  overflow-y: auto;
   position: relative;
   z-index: 1;
+  padding: 2rem 6rem;
+  overflow: hidden;
 }
 
-.center-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 2vh;
-  max-width: 900px;
+.main-panel {
   width: 100%;
-}
-
-.name-section {
-  background: rgba(26, 42, 74, 0.8);
-  backdrop-filter: blur(10px);
-  border: 2px solid #f021b9;
-  border-radius: 16px;
-  padding: 2vh 3vw;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.3),
-    inset 0 0 20px rgba(240, 33, 185, 0.05);
+  max-width: 1100px;
   display: flex;
   flex-direction: column;
-  gap: 1.5vh;
+  gap: 1.2rem;
+  position: relative;
 }
 
-.input-label {
-  color: #00f0ff;
-  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
-  font-weight: 600;
-  font-family: "Share Tech Mono", monospace;
-  text-align: center;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
-  letter-spacing: 0.1rem;
-  text-transform: uppercase;
+/* Bordes neon decorativos */
+.neon-border {
+  height: 3px;
+  position: relative;
+  margin: 0.5rem 0;
 }
 
-.room-input {
-  background: rgba(10, 25, 47, 0.6);
-  border: 2px solid rgba(0, 240, 255, 0.4);
-  border-radius: 10px;
-  padding: 1.5vh 2vw;
-  color: #00f0ff;
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
-  font-family: "Fira Code", monospace;
-  text-align: center;
-  outline: none;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+.neon-border-top {
+  background: linear-gradient(90deg, transparent 0%, #00f0ff 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.8),
+              0 0 20px rgba(0, 240, 255, 0.5);
+  margin-bottom: 1rem;
 }
 
-.room-input::placeholder {
-  color: rgba(0, 240, 255, 0.3);
+.neon-border-bottom-left {
+  background: linear-gradient(90deg, transparent 0%, #f021b9 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(240, 33, 185, 0.8),
+              0 0 20px rgba(240, 33, 185, 0.5);
+  width: 45%;
+  margin-right: auto;
+  margin-top: 1rem;
 }
 
-.room-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.4),
-    inset 0 0 15px rgba(240, 33, 185, 0.1);
-  color: #f021b9;
-  transform: scale(1.01);
+.neon-border-bottom-right {
+  background: linear-gradient(90deg, transparent 0%, #00f0ff 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.8),
+              0 0 20px rgba(0, 240, 255, 0.5);
+  width: 45%;
+  margin-left: auto;
+  margin-top: 0.3rem;
 }
 
-.config-grid {
+/* Línea 1: Nombre de la sala (ancho completo) */
+.config-row-1 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5vh 1.5vw;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+}
+
+/* Línea 2: Jugadores, Tiempo, Contraseña */
+.config-row-2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
 }
 
 .config-box {
-  background: rgba(26, 42, 74, 0.6);
-  backdrop-filter: blur(5px);
-  border: 2px solid rgba(0, 240, 255, 0.3);
+  background: rgba(26, 11, 46, 0.6);
+  backdrop-filter: blur(10px);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
   border-radius: 12px;
-  padding: 1.5vh 1vw;
+  padding: 1rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 1vh;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  gap: 0.7rem;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
   transition: all 0.3s ease;
 }
 
 .config-box:hover {
-  border-color: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.3);
-}
-
-.create-button-box {
-  grid-column: 1 / -1;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  margin-top: 1vh;
-}
-
-.create-button-box:hover {
-  border: none;
-  box-shadow: none;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.5),
+              0 0 35px rgba(240, 33, 185, 0.3);
+  transform: translateY(-2px);
 }
 
 .config-label {
-  color: #00f0ff;
-  font-size: clamp(0.8rem, 1vw, 0.95rem);
-  font-weight: 600;
-  font-family: "Share Tech Mono", monospace;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
   text-align: center;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
-  letter-spacing: 0.05rem;
+  letter-spacing: 0.1rem;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6),
+               0 0 20px rgba(240, 33, 185, 0.4);
 }
 
-.config-select,
 .config-input {
-  background: rgba(10, 25, 47, 0.6);
-  border: 2px solid rgba(0, 240, 255, 0.3);
+  background: rgba(45, 22, 84, 0.5);
+  border: 2px solid rgba(0, 240, 255, 0.4);
   border-radius: 8px;
-  padding: 1vh 0.5vw;
-  color: #00f0ff;
-  font-size: clamp(0.85rem, 1.1vw, 1rem);
-  font-family: "Fira Code", monospace;
+  padding: 0.75rem 0.9rem;
+  color: #ffffff;
+  font-size: 0.9rem;
   text-align: center;
   outline: none;
   transition: all 0.3s ease;
-  box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.1);
-}
-
-.config-select option {
-  background: #0a192f;
-  color: #00f0ff;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
 .config-input::placeholder {
-  color: rgba(0, 240, 255, 0.3);
+  color: rgba(0, 240, 255, 0.4);
+  text-shadow: none;
 }
 
-.config-select:focus,
 .config-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 15px rgba(240, 33, 185, 0.3),
-    inset 0 0 10px rgba(240, 33, 185, 0.1);
-  color: #f021b9;
+  border-color: rgba(0, 240, 255, 0.8);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6),
+              0 0 30px rgba(240, 33, 185, 0.3);
+  transform: scale(1.01);
 }
 
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5vh;
-}
-
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5vw;
-  color: #00f0ff;
-  font-size: clamp(0.8rem, 1vw, 0.95rem);
-  font-family: "Fira Code", monospace;
+.config-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: rgba(45, 22, 84, 0.5);
+  border: 2px solid rgba(0, 240, 255, 0.4);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  color: #ffffff;
+  font-size: 0.9rem;
+  text-align: center;
+  text-align-last: center;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: "Share Tech Mono", monospace;
   cursor: pointer;
-  padding: 0.5vh 0.5vw;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
-.radio-label:hover {
-  background: rgba(0, 240, 255, 0.1);
+.config-select option {
+  background: #0f0c29;
+  color: #ffffff;
 }
 
-.radio-label input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #f021b9;
+.config-select:focus {
+  border-color: rgba(0, 240, 255, 0.8);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6),
+              0 0 30px rgba(240, 33, 185, 0.3);
+  transform: scale(1.01);
+}
+
+/* Botones de acción */
+.footer-buttons {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0 2rem 0;
 }
 
 .btn-create {
-  width: 100%;
-  padding: 2vh 3vw;
-  min-height: 60px;
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
-  font-weight: 700;
-  font-family: "Share Tech Mono", monospace;
+  padding: 0.9rem 2.5rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.15rem;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.2rem;
-  background: linear-gradient(135deg, #39ff14, #00f0ff);
-  color: #0a192f;
-  border: 2px solid transparent;
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.4);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-create::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  transition: left 0.5s ease;
-}
-
-.btn-create:hover::before {
-  left: 100%;
+  background: linear-gradient(135deg, #00f0ff, #f021b9);
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
 }
 
 .btn-create:hover {
-  transform: scale(1.02);
-  box-shadow: 0 0 40px rgba(57, 255, 20, 0.6);
+  box-shadow: 0 0 45px rgba(0, 240, 255, 1),
+              0 0 65px rgba(240, 33, 185, 0.8);
+  transform: scale(1.06);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 1),
+               0 0 35px rgba(0, 240, 255, 1);
 }
 
-.side-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 2vh;
-  min-width: 150px;
+.btn-create:active {
+  transform: scale(0.97);
 }
 
-.btn-action {
-  padding: 2vh 2vw;
-  min-height: 80px;
-  font-size: clamp(1rem, 1.3vw, 1.2rem);
-  font-weight: 700;
-  font-family: "Share Tech Mono", monospace;
-  border: none;
-  border-radius: 12px;
+.btn-cancel {
+  padding: 0.65rem 1.5rem;
+  background-color: transparent;
+  color: #00f0ff;
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.12rem;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.15rem;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-  background: linear-gradient(
-    135deg,
-    rgba(0, 240, 255, 0.3),
-    rgba(240, 33, 185, 0.3)
-  );
-  color: #00f0ff;
-  border: 2px solid #00f0ff;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
 }
 
-.btn-action:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 240, 255, 0.4),
-    rgba(240, 33, 185, 0.4)
-  );
+.btn-cancel:hover {
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.7),
+              0 0 45px rgba(240, 33, 185, 0.5);
   transform: scale(1.05);
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
-  border-color: #f021b9;
-  color: #f021b9;
-  text-shadow: 0 0 10px rgba(240, 33, 185, 0.8);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 1);
 }
 
+/* Responsive Design */
 @media (max-width: 1200px) {
-  .config-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  .config-row-2 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
 @media (max-width: 768px) {
   .content-wrapper {
-    flex-direction: column;
+    padding: 0 1.5rem;
   }
 
-  .config-grid {
-    grid-template-columns: 1fr;
+  .btn-create {
+    padding: 0.85rem 2rem;
+    font-size: 0.95rem;
   }
 
-  .side-buttons {
-    flex-direction: row;
-    justify-content: center;
-    width: 100%;
+  .btn-back,
+  .btn-cancel {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 0 1rem;
+  }
+
+  .config-box {
+    padding: 1rem 0.8rem;
+  }
+
+  .config-input,
+  .config-select {
+    padding: 0.7rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .btn-create,
+  .btn-back,
+  .btn-cancel {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.85rem;
   }
 }
 </style>

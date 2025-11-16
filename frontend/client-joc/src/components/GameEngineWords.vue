@@ -1429,10 +1429,10 @@ const isRoomCreator = computed(() => {
           <div class="ring-fill" :style="{ animationDuration: '1s' }"></div>
         </div>
       </div>
-      <div class="countdown-label">PREPARATS...</div>
+      <div class="countdown-label">PREPAREU-VOS...</div>
     </div>
 
-    <!-- Popup de Racha -->
+    <!-- Popup de Ratxa -->
     <div v-if="showStreakPopup" class="streak-popup">
       <div class="streak-content">
         <div class="streak-flame">🔥</div>
@@ -1458,7 +1458,7 @@ const isRoomCreator = computed(() => {
         <div class="time-value">{{ timeRemaining }}s</div>
       </div>
       <div class="words-section">
-        <div class="words-label">Paraules Acertades</div>
+        <div class="words-label">Paraules Encertades</div>
         <div class="words-value">{{ wordsCompleted }}</div>
       </div>
       <div class="errors-section">
@@ -1494,7 +1494,7 @@ const isRoomCreator = computed(() => {
                   </span>
                 </div>
                 <div class="player-stats">
-                  <span class="stat-wpm">{{ player.wpm || 0 }} WPM</span>
+                  <span class="stat-wpm">{{ player.wpm || 0 }} PPM</span>
                 </div>
               </div>
             </div>
@@ -1631,7 +1631,7 @@ const isRoomCreator = computed(() => {
                   ),
                 }"
               >
-                Space
+                Espai
                 <span
                   v-for="(player, pIndex) in playersState.filter(
                     (p) => p.isTyping && p.lastKey === 'SPACE'
@@ -1666,16 +1666,16 @@ const isRoomCreator = computed(() => {
       </div>
     </div>
 
-    <!-- Pantalla de Resultados Finales -->
+    <!-- Pantalla de Resultats Finals -->
     <div v-if="gameFinished" class="results-overlay">
       <div class="results-container">
-        <!-- Título y Ganador -->
+        <!-- Títol i Guanyador -->
         <div class="results-header">
-          <div class="results-title">🏆 FINAL DEL JUEGO 🏆</div>
+          <div class="results-title">🏆 FINAL DEL JOC 🏆</div>
 
-          <!-- Mostrar Ganador si no hay empate -->
+          <!-- Mostrar Guanyador si no hi ha empat -->
           <div class="winner-section" v-if="getWinner() && !isTie()">
-            <div class="winner-label">GANADOR</div>
+            <div class="winner-label">GUANYADOR</div>
             <div class="winner-name">{{ getWinner().name }}</div>
             <div class="winner-stats">
               {{ getWinner().wordsCompleted }} paraules correctes ·
@@ -1683,10 +1683,10 @@ const isRoomCreator = computed(() => {
             </div>
           </div>
 
-          <!-- Mostrar Empate si hay empate -->
+          <!-- Mostrar Empat si hi ha empat -->
           <div class="winner-section tie-section" v-else-if="isTie()">
-            <div class="tie-label">🤝 EMPATE 🤝</div>
-            <div class="tie-message">Mismas palabras y mismos errores!</div>
+            <div class="tie-label">🤝 EMPAT 🤝</div>
+            <div class="tie-message">Mateixes paraules i mateixos errors!</div>
           </div>
         </div>
 
@@ -1697,7 +1697,7 @@ const isRoomCreator = computed(() => {
             <div class="header-name">Jugador</div>
             <div class="header-words">Paraules</div>
             <div class="header-errors">Errors</div>
-            <div class="header-wpm">WPM</div>
+            <div class="header-wpm">PPM</div>
           </div>
 
           <div class="table-body">
@@ -1727,23 +1727,23 @@ const isRoomCreator = computed(() => {
           </div>
         </div>
 
-        <!-- Botones de Acción -->
+        <!-- Botons d'Acció -->
         <div class="results-actions">
           <button
             v-if="isRoomCreator"
             @click="restartGame()"
             class="btn-restart"
           >
-            🔄 VOLVER A JUGAR
+            🔄 TORNAR A JUGAR
           </button>
           <button @click="exitToLobby()" class="btn-exit">
-            🚪 SALIR AL LOBBY
+            🚪 SORTIR AL LOBBY
           </button>
         </div>
 
-        <!-- Mensaje informativo para jugadores que no son creadores -->
+        <!-- Missatge informatiu per a jugadors que no són creadors -->
         <div v-if="!isRoomCreator" class="creator-only-message">
-          <p>Solo el creador de la sala puede reiniciar el juego</p>
+          <p>Només el creador de la sala pot reiniciar el joc</p>
         </div>
       </div>
     </div>
@@ -1838,27 +1838,28 @@ const isRoomCreator = computed(() => {
   text-shadow: 0 0 12px #00f0ff;
 }
 
-/* ===== POPUP DE RACHA ===== */
+/* ===== POPUP DE RACHA - MILLORAT ===== */
 .streak-popup {
   position: fixed;
-  top: 5%;
+  top: 8%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
-  animation: streakSlideDown 0.4s ease-out;
+  animation: streakSlideDown 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  filter: drop-shadow(0 10px 30px rgba(255, 215, 0, 0.6));
 }
 
 @keyframes streakSlideDown {
   0% {
-    transform: translate(-50%, -100%);
+    transform: translate(-50%, -150%) scale(0.5) rotate(-10deg);
     opacity: 0;
   }
-  50% {
-    transform: translate(-50%, 10%);
+  60% {
+    transform: translate(-50%, 5%) scale(1.1) rotate(3deg);
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 0) scale(1) rotate(0deg);
     opacity: 1;
   }
 }
@@ -1866,55 +1867,106 @@ const isRoomCreator = computed(() => {
 .streak-content {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   background: linear-gradient(
     135deg,
-    rgba(240, 33, 185, 0.95),
-    rgba(255, 100, 0, 0.95)
+    rgba(255, 215, 0, 0.98) 0%,
+    rgba(255, 165, 0, 0.98) 50%,
+    rgba(255, 100, 0, 0.98) 100%
   );
-  padding: 1rem 2rem;
-  border-radius: 15px;
-  border: 3px solid #ffd700;
-  box-shadow: 0 0 40px rgba(255, 215, 0, 0.8), 0 0 80px rgba(240, 33, 185, 0.6),
-    inset 0 0 30px rgba(255, 255, 255, 0.2);
+  padding: 1.5rem 3rem;
+  border-radius: 20px;
+  border: 4px solid #ffd700;
+  box-shadow: 0 0 50px rgba(255, 215, 0, 1), 
+              0 0 100px rgba(255, 165, 0, 0.8),
+              inset 0 0 40px rgba(255, 255, 255, 0.3),
+              0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: streakPulseGlow 1s ease-in-out infinite alternate;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes streakPulseGlow {
+  0% {
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.9), 
+                0 0 90px rgba(255, 165, 0, 0.7),
+                inset 0 0 40px rgba(255, 255, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 70px rgba(255, 215, 0, 1), 
+                0 0 120px rgba(255, 165, 0, 1),
+                inset 0 0 50px rgba(255, 255, 255, 0.4);
+  }
+}
+
+.streak-content::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: streakShine 2s linear infinite;
+}
+
+@keyframes streakShine {
+  0% {
+    left: -150%;
+  }
+  100% {
+    left: 150%;
+  }
 }
 
 .streak-flame {
-  font-size: 2.5rem;
-  animation: flameFlicker 0.5s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 10px #ff6600);
+  font-size: 3rem;
+  animation: flameFlicker 0.4s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 15px #ff6600) drop-shadow(0 0 25px #ff3300);
+  z-index: 1;
 }
 
 @keyframes flameFlicker {
   0% {
-    transform: scale(1) rotate(-5deg);
+    transform: scale(0.95) rotate(-8deg);
+    filter: drop-shadow(0 0 15px #ff6600);
   }
   100% {
-    transform: scale(1.1) rotate(5deg);
+    transform: scale(1.15) rotate(8deg);
+    filter: drop-shadow(0 0 25px #ff3300) drop-shadow(0 0 35px #ff6600);
   }
 }
 
 .streak-text {
   text-align: center;
+  z-index: 1;
 }
 
 .streak-player {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 0 20px #ffd700, 0 0 40px #ff6600;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #1a0b2e;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+               0 2px 4px rgba(0, 0, 0, 0.3);
   font-family: "Fira Code", monospace;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.05em;
 }
 
 .streak-message {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #ffd700;
-  text-shadow: 0 0 15px #ff6600;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #5a2d0c;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
   font-family: "Share Tech Mono", monospace;
   text-transform: uppercase;
-  letter-spacing: 0.1rem;
+  letter-spacing: 0.15em;
 }
 
 .game-view {
@@ -1922,15 +1974,10 @@ const isRoomCreator = computed(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0a192f;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 240, 255, 0.03) 0px,
-    transparent 1px,
-    transparent 2px,
-    rgba(0, 240, 255, 0.03) 3px
-  );
-  color: #e0e0e0;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a0b2e 25%, #16213e 50%, #0f3460 75%, #1a1a2e 100%);
+  background-size: 400% 400%;
+  animation: bgFloat 20s ease infinite;
+  color: #ffffff;
   overflow: hidden;
   padding: 0;
   margin: 0;
@@ -1942,71 +1989,124 @@ const isRoomCreator = computed(() => {
   left: 0;
 }
 
+@keyframes bgFloat {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Efectos de profundidad mejorados */
+.game-view::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(0, 240, 255, 0.12) 0%, transparent 60%);
+  animation: bgFloat 25s ease-in-out infinite reverse;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.game-view::after {
+  content: '';
+  position: absolute;
+  bottom: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 70% 60%, rgba(240, 33, 185, 0.1) 0%, transparent 60%);
+  animation: bgFloat 30s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ===== HEADER: Tiempo, Progreso, Errores ===== */
 .game-header {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  gap: clamp(1rem, 2vw, 2rem);
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: clamp(0.6rem, 1.2vh, 1rem) clamp(1rem, 2vw, 2rem);
-  border-radius: 0;
-  border: none;
-  border-bottom: 2px solid #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-  min-height: clamp(60px, 8vh, 80px);
+  gap: 1.5rem;
+  background: rgba(26, 11, 46, 0.85);
+  backdrop-filter: blur(15px);
+  padding: 1rem 2rem;
+  border-bottom: 4px solid transparent;
+  background-image: linear-gradient(rgba(26, 11, 46, 0.85), rgba(26, 11, 46, 0.85)),
+                    linear-gradient(90deg, #00f0ff 0%, #f021b9 50%, #00f0ff 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 200% 100%;
+  animation: headerGlow 3s ease infinite;
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.4),
+              0 0 55px rgba(240, 33, 185, 0.3);
+  position: relative;
+  z-index: 100;
+}
+
+@keyframes headerGlow {
+  0%, 100% {
+    background-position: 0% 0%, 0% 50%;
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.4), 0 0 55px rgba(240, 33, 185, 0.3);
+  }
+  50% {
+    background-position: 0% 0%, 100% 50%;
+    box-shadow: 0 0 45px rgba(240, 33, 185, 0.5), 0 0 70px rgba(0, 240, 255, 0.4);
+  }
 }
 
 .time-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(0.2rem, 0.5vh, 0.5rem);
-  flex: 1;
-  min-width: 80px;
+  gap: 0.3rem;
 }
 
 .time-label {
-  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
+  font-size: 0.75rem;
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  font-weight: 700;
 }
 
 .time-value {
-  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 900;
   color: #f021b9;
-  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
+  text-shadow: 0 0 12px #f021b9, 0 0 25px #f021b9;
   font-family: "Fira Code", monospace;
 }
 
 .words-section {
-  flex: 2;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.2rem, 0.5vh, 0.5rem);
+  gap: 0.3rem;
   align-items: center;
   justify-content: center;
 }
 
 .words-label {
-  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
+  font-size: 0.75rem;
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  font-weight: 700;
 }
 
 .words-value {
-  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 900;
   color: #39ff14;
-  text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+  text-shadow: 0 0 12px #39ff14, 0 0 25px #39ff14;
   font-family: "Fira Code", monospace;
 }
 
@@ -2015,148 +2115,186 @@ const isRoomCreator = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.2rem, 0.5vh, 0.5rem);
-  flex: 1;
-  min-width: 80px;
+  gap: 0.3rem;
 }
 
 .errors-label {
-  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
+  font-size: 0.75rem;
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  font-weight: 700;
 }
 
 .errors-value {
-  font-size: clamp(1.2rem, 2.5vh, 1.8rem);
-  font-weight: 700;
-  color: #ff0000;
-  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #ff1744;
+  text-shadow: 0 0 12px #ff1744, 0 0 25px #ff1744;
   font-family: "Fira Code", monospace;
 }
 
-/* ===== CONTENT: Texto y Input ===== */
+/* ===== CONTENT: Layout Principal ===== */
 .game-content {
   flex: 1;
-  display: grid;
-  grid-template-columns: minmax(200px, 18vw) 1fr;
-  gap: clamp(0.6rem, 1vw, 1rem);
-  align-items: stretch;
-  min-height: 0;
-  height: 100%;
-  /* Márgenes internos para que no pegue a los bordes de la ventana */
-  padding: clamp(0.6rem, 1vh, 1rem) clamp(1rem, 2vw, 1.5rem)
-    clamp(0.8rem, 2vh, 1.6rem);
-  box-sizing: border-box;
-}
-
-.players-panel {
-  background: rgba(26, 42, 74, 0.8);
-  backdrop-filter: blur(10px);
-  border: none;
-  border-right: 2px solid #00f0ff;
-  border-radius: 0;
-  padding: clamp(0.9rem, 1.4vw, 1.4rem);
-  box-shadow: none;
   display: flex;
-  flex-direction: column;
-  gap: clamp(1rem, 1.5vw, 1.5rem);
-  height: 100%;
-  overflow-y: auto;
-  margin-top: clamp(0.3rem, 0.6vh, 0.6rem);
-}
-
-.game-area {
-  display: grid;
-  grid-template-rows: 1fr auto 1fr;
-  gap: clamp(0.8rem, 1.5vh, 1.2rem);
+  gap: 1rem;
   min-height: 0;
-  height: 100%;
-  padding: 0;
-}
-
-.word-display-container,
-.input-container,
-.keyboard-container {
-  background: rgba(26, 42, 74, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: clamp(0.8rem, 1.2vw, 1.2rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Margen externo para separar bloques visualmente */
-  margin-top: clamp(0.2rem, 0.5vh, 0.6rem);
-}
-
-.word-display-container {
-  border: 2px solid #f021b9;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.3);
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 1rem;
+  position: relative;
+  z-index: 10;
 }
 
-.input-container {
-  border: 2px solid #ffd700;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-  padding: clamp(0.6rem, 1.2vw, 1rem);
-}
-
-.keyboard-container {
-  border: 2px solid #39ff14;
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
-  padding: clamp(0.8rem, 1.2vw, 1.2rem);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(0.4rem, 1vh, 0.8rem);
-}
-
-.typing-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: #fff;
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
-  text-align: center;
-  outline: none;
-  font-family: "Fira Code", monospace;
-}
-
-/* === PANEL DE JUGADORES === */
+/* Panel lateral de jugadores (esquerra) */
 .players-panel {
   flex: 0 0 16vw;
-  min-width: 180px;
-  max-width: 240px;
-  background: rgba(26, 42, 74, 0.85);
-  backdrop-filter: blur(15px);
-  border: 2px solid #39ff14;
-  border-radius: 15px;
-  padding: 1.5vh 1vw;
+  min-width: 200px;
+  max-width: 260px;
+  background: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(15, 20, 40, 0.95));
+  backdrop-filter: blur(20px);
+  border: 3px solid transparent;
+  background-image: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(15, 20, 40, 0.95)),
+                    linear-gradient(135deg, #00f0ff 0%, #f021b9 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 18px;
+  padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.2vh;
-  box-shadow: 0 0 25px rgba(57, 255, 20, 0.4),
-    inset 0 0 15px rgba(57, 255, 20, 0.08);
+  gap: 1rem;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+              0 0 60px rgba(240, 33, 185, 0.3);
   overflow: hidden;
   height: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+/* Área principal del joc (dreta) */
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 0;
+  min-width: 0;
+  justify-content: center;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+/* Contenidor de la paraula */
+.word-display-container {
+  width: 100%;
+  max-width: 1200px;
+  border: 4px solid transparent;
+  background-image: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(20, 25, 50, 0.95)),
+                    linear-gradient(135deg, #00f0ff 0%, #f021b9 50%, #00f0ff 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 200% 200%;
+  animation: borderShift 3s ease infinite;
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 3rem 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 50px rgba(0, 240, 255, 0.6),
+              0 0 80px rgba(240, 33, 185, 0.4),
+              inset 0 0 40px rgba(0, 240, 255, 0.08);
+  min-height: 200px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Contenidor de l'input */
+.input-container {
+  width: 100%;
+  max-width: 1200px;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Contenidor del teclat */
+.keyboard-container {
+  width: 100%;
+  max-width: 1200px;
+  border: 3px solid transparent;
+  background-image: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(15, 20, 40, 0.95)),
+                    linear-gradient(135deg, #00f0ff 0%, #f021b9 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  backdrop-filter: blur(15px);
+  border-radius: 18px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+              0 0 60px rgba(240, 33, 185, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes borderShift {
+  0%, 100% {
+    background-position: 0% 0%, 0% 50%;
+  }
+  50% {
+    background-position: 0% 0%, 100% 50%;
+  }
+}
+
+/* Panel de jugadors */
+.players-panel {
+  flex: 0 0 16vw;
+  min-width: 200px;
+  max-width: 260px;
+  background: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(15, 20, 40, 0.95));
+  backdrop-filter: blur(20px);
+  border: 3px solid transparent;
+  background-image: linear-gradient(135deg, rgba(10, 15, 35, 0.95), rgba(15, 20, 40, 0.95)),
+                    linear-gradient(135deg, #00f0ff 0%, #f021b9 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 18px;
+  padding: 1.8vh 1.2vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vh;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.4),
+              0 0 60px rgba(240, 33, 185, 0.3);
+  overflow: hidden;
+  height: 100%;
+  position: relative;
+  z-index: 10;
 }
 
 .panel-title {
-  font-size: clamp(1rem, 1.6vh, 1.2rem);
-  font-weight: 800;
-  color: #39ff14;
+  font-size: clamp(1.05rem, 1.7vh, 1.3rem);
+  font-weight: 900;
+  color: #00f0ff;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   margin: 0;
-  text-shadow: 0 0 15px #39ff14, 0 0 25px #39ff14;
+  text-shadow: 0 0 20px rgba(0, 240, 255, 1),
+               0 0 40px rgba(240, 33, 185, 0.6);
   font-family: "Share Tech Mono", monospace;
-  padding-bottom: 1vh;
-  border-bottom: 2px solid rgba(57, 255, 20, 0.3);
+  padding-bottom: 1.2vh;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, transparent, #00f0ff, #f021b9, transparent) 1;
   flex-shrink: 0;
 }
 
@@ -2179,36 +2317,72 @@ const isRoomCreator = computed(() => {
 }
 
 .player-list::-webkit-scrollbar-thumb {
-  background: rgba(57, 255, 20, 0.5);
+  background: rgba(138, 43, 226, 0.6);
   border-radius: 10px;
 }
 
 .player-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(57, 255, 20, 0.7);
+  background: rgba(138, 43, 226, 0.8);
 }
 
 .player-card {
-  background: rgba(10, 25, 47, 0.7);
-  border: 2px solid rgba(57, 255, 20, 0.4);
-  border-radius: 12px;
-  padding: 1.2vh 1vw;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 12px rgba(57, 255, 20, 0.2);
+  background: rgba(10, 15, 30, 0.85);
+  border: 2px solid transparent;
+  background-image: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.85)),
+                    linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(240, 33, 185, 0.3));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 14px;
+  padding: 1.4vh 1.2vw;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25),
+              inset 0 0 15px rgba(0, 240, 255, 0.05);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(0, 240, 255, 0.05),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: all 0.5s ease;
+}
+
+.player-card:hover::before {
+  left: 100%;
+}
+
+.player-card:hover {
+  transform: translateX(5px);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
 }
 
 .player-card.is-typing {
-  border-color: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
-  animation: typingPulse 0.8s ease-in-out infinite alternate;
+  background-image: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.85)),
+                    linear-gradient(135deg, rgba(240, 33, 185, 0.5), rgba(0, 240, 255, 0.3));
+  box-shadow: 0 0 35px rgba(240, 33, 185, 0.8),
+              0 0 50px rgba(0, 240, 255, 0.4);
+  animation: typingPulse 0.6s ease-in-out infinite alternate;
+  transform: translateX(8px) scale(1.02);
 }
 
 @keyframes typingPulse {
   0% {
-    box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
+    box-shadow: 0 0 30px rgba(240, 33, 185, 0.7), 0 0 45px rgba(0, 240, 255, 0.3);
   }
   100% {
-    box-shadow: 0 0 30px rgba(240, 33, 185, 0.8);
+    box-shadow: 0 0 45px rgba(240, 33, 185, 1), 0 0 70px rgba(0, 240, 255, 0.6);
   }
 }
 
@@ -2242,8 +2416,8 @@ const isRoomCreator = computed(() => {
 .player-name {
   font-size: clamp(0.9rem, 1.5vh, 1.1rem);
   font-weight: 700;
-  color: #00f0ff;
-  text-shadow: 0 0 8px #00f0ff;
+  color: #ffffff;
+  text-shadow: 0 0 10px #1e90ff, 0 0 20px #1e90ff;
   display: flex;
   align-items: center;
   gap: clamp(0.4rem, 0.8vw, 0.6rem);
@@ -2264,14 +2438,6 @@ const isRoomCreator = computed(() => {
   font-weight: 800;
   color: #ffd700;
   text-shadow: 0 0 6px #ff6600;
-}
-
-.player-stats {
-  font-size: clamp(0.8rem, 1.3vh, 0.95rem);
-  color: #39ff14;
-  font-weight: 600;
-  text-shadow: 0 0 6px rgba(57, 255, 20, 0.6);
-  font-family: "Share Tech Mono", monospace;
 }
 
 .player-bottom {
@@ -2324,149 +2490,144 @@ const isRoomCreator = computed(() => {
 }
 
 .current-word {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 800;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 900;
   color: #ffffff;
-  letter-spacing: clamp(0.15em, 0.2em, 0.25em);
+  letter-spacing: clamp(0.2em, 0.25em, 0.3em);
   font-family: "Fira Code", monospace;
   text-align: center;
-  line-height: 1.2;
-  text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  line-height: 1.3;
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.8),
+               0 0 40px rgba(240, 33, 185, 0.5),
+               0 4px 8px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: clamp(0.12em, 0.18em, 0.22em);
-  padding: 1rem;
+  gap: clamp(0.15em, 0.2em, 0.25em);
+  padding: 2rem;
   word-break: break-word;
   max-width: 100%;
+  filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.4));
 }
 
 .current-word span {
   display: inline-block;
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .word-counter {
   font-size: clamp(1rem, 1.8vh, 1.3rem);
   color: #39ff14;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-family: "Share Tech Mono", monospace;
   font-weight: 700;
-  text-shadow: 0 0 12px #39ff14, 0 0 25px #39ff14;
-  background: rgba(57, 255, 20, 0.1);
-  padding: 1vh 1.5vw;
-  border-radius: 12px;
-  border: 2px solid rgba(57, 255, 20, 0.3);
+  text-shadow: 0 0 10px #39ff14;
 }
 
-.input-area {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  align-items: center;
-}
-
+/* Input per escriure */
 .typing-input {
   width: 100%;
-  padding: 1.5vh 2vw;
-  font-size: clamp(1.1rem, 2vh, 1.4rem);
+  padding: 1.8vh 2.5vw;
+  font-size: clamp(1.3rem, 2.4vh, 1.8rem);
   font-family: "Fira Code", monospace;
-  font-weight: 600;
-  background: rgba(10, 25, 47, 0.95);
+  font-weight: 700;
+  background: rgba(10, 15, 30, 0.98);
   color: #00f0ff;
-  border: 3px solid #00f0ff;
+  border: 4px solid transparent;
+  background-image: linear-gradient(rgba(10, 15, 30, 0.98), rgba(10, 15, 30, 0.98)),
+                    linear-gradient(135deg, #00f0ff 0%, #f021b9 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
   border-radius: 15px;
   outline: none;
-  transition: all 0.4s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4),
-    inset 0 0 15px rgba(0, 240, 255, 0.1);
-  letter-spacing: 0.1em;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.5),
+              inset 0 0 20px rgba(0, 240, 255, 0.05);
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 15px rgba(0, 240, 255, 0.8);
 }
 
 .typing-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 35px rgba(240, 33, 185, 0.8),
-    inset 0 0 20px rgba(240, 33, 185, 0.15);
-  background: rgba(10, 25, 47, 1);
+  background: rgba(10, 15, 30, 1);
   color: #f021b9;
-  text-shadow: 0 0 10px #f021b9;
+  background-image: linear-gradient(rgba(10, 15, 30, 1), rgba(10, 15, 30, 1)),
+                    linear-gradient(135deg, #f021b9 0%, #00f0ff 100%);
+  box-shadow: 0 0 50px rgba(240, 33, 185, 0.9), 
+              0 0 80px rgba(0, 240, 255, 0.5),
+              inset 0 0 30px rgba(240, 33, 185, 0.1);
+  text-shadow: 0 0 20px rgba(240, 33, 185, 1);
+  transform: translateY(-2px) scale(1.01);
 }
 
 .typing-input::placeholder {
-  color: rgba(0, 240, 255, 0.5);
+  color: rgba(0, 240, 255, 0.4);
+  text-shadow: none;
 }
 
-/* ===== FOOTER: Teclado y Botón ===== */
-.game-footer {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 16vw 2vw 1fr;
-  align-items: center;
-  position: relative;
-  width: 100%;
-  height: 20vh;
-  padding: 0 0 2vh 0;
-  margin-top: auto;
-}
-
-.keyboard-visual {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.5rem, 1vh, 0.8rem);
-  justify-content: center;
-}
-
-.keyboard-row {
-  display: flex;
-  justify-content: center;
-  gap: clamp(0.4rem, 0.8vw, 0.6rem);
-  min-height: clamp(48px, 6vh, 64px);
-}
-
+/* ===== TECLAT: Estils de les tecles ===== */
 .key {
-  min-width: clamp(48px, 5vw, 72px);
+  min-width: clamp(50px, 5vw, 75px);
   height: 100%;
   flex: 0 0 auto;
-  max-width: clamp(60px, 6vw, 80px);
+  max-width: clamp(65px, 6vw, 85px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
-  border: 2px solid #00f0ff;
-  border-radius: 6px;
-  font-size: clamp(0.85rem, 1.6vh, 1.05rem);
-  font-weight: 700;
+  background: linear-gradient(145deg, rgba(15, 25, 45, 0.95), rgba(10, 20, 40, 0.95));
+  border: 2px solid rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+  font-size: clamp(0.9rem, 1.7vh, 1.1rem);
+  font-weight: 800;
   color: #00f0ff;
-  transition: all 0.2s ease;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: default;
   box-shadow: 0 0 15px rgba(0, 240, 255, 0.3),
-    inset 0 0 8px rgba(0, 240, 255, 0.08);
+              inset 0 2px 5px rgba(0, 240, 255, 0.1),
+              0 4px 8px rgba(0, 0, 0, 0.4);
   font-family: "Share Tech Mono", monospace;
   position: relative;
+  overflow: hidden;
+}
+
+.key::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.key:hover::before {
+  left: 100%;
 }
 
 .key:hover {
-  background: linear-gradient(145deg, #1f3557, #142135);
+  background: linear-gradient(145deg, rgba(20, 35, 60, 1), rgba(15, 30, 50, 1));
   border-color: #f021b9;
-  transform: translateY(-2px);
-  box-shadow: 0 0 25px rgba(240, 33, 185, 0.7);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.7),
+              0 8px 15px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 15px rgba(240, 33, 185, 1);
   color: #f021b9;
 }
 
 /* Tecla presionada (efecto cuando el usuario pulsa una tecla física) */
 .key.pressed {
-  transform: translateY(2px) scale(0.95);
-  background: linear-gradient(180deg, #f021b9, #ff00ff);
+  transform: translateY(2px) scale(0.96);
+  background: linear-gradient(145deg, rgba(240, 33, 185, 0.5), rgba(255, 20, 147, 0.5));
+  border-color: #f021b9;
+  border-width: 3px;
   color: #ffffff;
-  box-shadow: 0 0 35px rgba(240, 33, 185, 1) inset,
-    0 0 30px rgba(240, 33, 185, 0.9);
-  border-color: #ffffff;
-  text-shadow: 0 0 8px #ffffff;
+  box-shadow: 0 0 45px rgba(240, 33, 185, 1), 
+              0 0 70px rgba(0, 240, 255, 0.6),
+              inset 0 0 25px rgba(240, 33, 185, 0.5);
+  text-shadow: 0 0 20px #ffffff, 0 0 35px #f021b9;
 }
 
 .key.wide {
@@ -2494,44 +2655,81 @@ const isRoomCreator = computed(() => {
   z-index: 1;
 }
 
-/* Etiqueta superior del teclado (tecla pulsada) */
+/* Etiqueta superior del teclado (tecla pulsada) - Mejorada */
 .keyboard-label {
   width: 100%;
-  min-height: clamp(22px, 3vh, 32px);
+  min-height: clamp(28px, 3.5vh, 38px);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: clamp(0.2rem, 0.6vh, 0.6rem);
+  margin-top: clamp(0.3rem, 0.8vh, 0.8rem);
+  margin-bottom: clamp(0.4rem, 1vh, 1rem);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(240, 33, 185, 0.1));
+  border-radius: 10px;
+  padding: clamp(0.4rem, 0.8vh, 0.6rem);
+  border: 2px solid transparent;
 }
 
 .keyboard-label-text {
-  color: #ffd700;
+  color: #00f0ff;
   font-family: "Share Tech Mono", monospace;
-  font-weight: 800;
-  font-size: clamp(0.9rem, 1.8vh, 1.2rem);
-  letter-spacing: 0.15em;
-  text-shadow: 0 0 12px #ffd700, 0 0 20px rgba(255, 215, 0, 0.7);
+  font-weight: 900;
+  font-size: clamp(1rem, 2vh, 1.4rem);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 15px rgba(0, 240, 255, 1), 
+               0 0 30px rgba(240, 33, 185, 0.7),
+               0 0 45px rgba(0, 240, 255, 0.5);
+  animation: keyLabelPulse 0.6s ease-in-out infinite alternate;
+  text-transform: uppercase;
+}
+
+@keyframes keyLabelPulse {
+  0% {
+    transform: scale(1);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 1), 0 0 30px rgba(240, 33, 185, 0.7);
+  }
+  100% {
+    transform: scale(1.08);
+    text-shadow: 0 0 25px rgba(0, 240, 255, 1), 0 0 45px rgba(240, 33, 185, 1);
+  }
 }
 
 .keyboard-label-placeholder {
   opacity: 0;
 }
 
+/* Teclat visual - Layout horizontal */
+.keyboard-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 /* Centrado de barra espaciadora y ajuste de fila especial */
 .keyboard-row.special-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
   align-items: center;
 }
 
 .keyboard-row.special-row .key.wide {
-  grid-column: 2;
-  justify-self: center;
+  flex: 0 0 auto;
+  min-width: clamp(300px, 35vw, 450px);
 }
 
 .keyboard-row.special-row .key.backspace {
-  grid-column: 3;
-  justify-self: end;
+  flex: 0 0 auto;
 }
 
 /* Estados de los caracteres del texto */
@@ -2548,84 +2746,130 @@ const isRoomCreator = computed(() => {
   margin: 0 0.2rem;
 }
 
-/* Correcto: color verde neón brillante */
+/* Correcto: color verde neón brillante con efecto pop */
 .char-correct {
   color: #39ff14;
-  text-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14;
-  background: rgba(57, 255, 20, 0.15);
-  transform: scale(1.05);
+  text-shadow: 0 0 20px #39ff14, 
+               0 0 40px #39ff14,
+               0 0 60px rgba(57, 255, 20, 0.5);
+  background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(57, 255, 20, 0.05));
+  transform: scale(1.08);
+  border-radius: 6px;
+  padding: 0.2em 0.15em;
+  animation: charCorrectPop 0.3s ease;
 }
 
-/* Incorrecto: color rojo brillante con efecto de error */
+@keyframes charCorrectPop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* Incorrecto: color rojo brillante con efecto de error intenso */
 .char-incorrect {
-  color: #ff3366;
-  text-shadow: 0 0 15px #ff3366, 0 0 30px #ff0000;
-  background: rgba(255, 51, 102, 0.2);
+  color: #ff1744;
+  text-shadow: 0 0 20px #ff1744, 
+               0 0 40px #ff0000,
+               0 0 60px rgba(255, 0, 0, 0.5);
+  background: linear-gradient(135deg, rgba(255, 23, 68, 0.3), rgba(255, 23, 68, 0.1));
+  border-radius: 6px;
+  padding: 0.2em 0.15em;
   animation: errorShake 0.5s ease;
-  transform: scale(1.1);
+  transform: scale(1.12);
 }
 
 @keyframes errorShake {
-  0%,
-  100% {
-    transform: scale(1.1) translateX(0);
+  0%, 100% {
+    transform: scale(1.12) translateX(0) rotate(0deg);
   }
-  25% {
-    transform: scale(1.1) translateX(-3px);
+  20% {
+    transform: scale(1.15) translateX(-5px) rotate(-2deg);
   }
-  75% {
-    transform: scale(1.1) translateX(3px);
+  40% {
+    transform: scale(1.15) translateX(5px) rotate(2deg);
   }
-  50% {
-    opacity: 0.5;
+  60% {
+    transform: scale(1.15) translateX(-3px) rotate(-1deg);
+  }
+  80% {
+    transform: scale(1.15) translateX(3px) rotate(1deg);
   }
 }
 
 /* Corregido: color amarillo-naranja neón brillante */
 .char-corrected {
   color: #ffd700;
-  text-shadow: 0 0 15px #ffd700, 0 0 30px #ffa500;
-  background: rgba(255, 215, 0, 0.15);
-  transform: scale(1.05);
-  animation: correctedGlow 0.6s ease;
+  text-shadow: 0 0 20px #ffd700, 
+               0 0 40px #ffa500,
+               0 0 60px rgba(255, 165, 0, 0.5);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.1));
+  transform: scale(1.06);
+  border-radius: 6px;
+  padding: 0.2em 0.15em;
+  animation: correctedGlow 0.8s ease infinite alternate;
 }
 
 @keyframes correctedGlow {
   0% {
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    filter: brightness(1);
   }
   100% {
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+    filter: brightness(1.2);
   }
 }
 
 .btn-back {
-  background: rgba(0, 240, 255, 0.15);
-  border: 2px solid #00f0ff;
-  color: #00f0ff;
-  padding: clamp(0.5rem, 1vh, 0.7rem) clamp(1rem, 2vw, 1.5rem);
-  border-radius: 8px;
-  font-size: clamp(0.8rem, 1.2vh, 0.95rem);
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 0.8rem 1.8rem;
+  font-size: 0.9rem;
+  font-weight: 900;
   font-family: "Share Tech Mono", monospace;
-  font-weight: 700;
+  background: rgba(26, 11, 46, 0.95);
+  color: #00f0ff;
+  border: 3px solid transparent;
+  background-image: linear-gradient(rgba(26, 11, 46, 0.95), rgba(26, 11, 46, 0.95)),
+                    linear-gradient(135deg, #00f0ff, #f021b9);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
-  backdrop-filter: blur(10px);
-  white-space: nowrap;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(15px);
+  z-index: 10000;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.5),
+              0 0 40px rgba(240, 33, 185, 0.3);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  white-space: nowrap;
 }
 
 .btn-back:hover {
-  background: rgba(240, 33, 185, 0.2);
-  border-color: #f021b9;
+  background-image: linear-gradient(rgba(240, 33, 185, 0.3), rgba(240, 33, 185, 0.3)),
+                    linear-gradient(135deg, #f021b9, #00f0ff);
   color: #f021b9;
-  transform: translateX(-4px) scale(1.05);
-  box-shadow: 0 0 25px rgba(240, 33, 185, 0.6);
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 0 35px rgba(240, 33, 185, 0.9),
+              0 0 60px rgba(0, 240, 255, 0.6),
+              0 8px 20px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 0 15px rgba(240, 33, 185, 1),
+               0 0 30px rgba(240, 33, 185, 0.6);
+}
+
+.btn-back:active {
+  transform: translateY(-2px) scale(1.05);
 }
 
 /* === RESPONSIVE BREAKPOINTS PARA LAYOUT === */

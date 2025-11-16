@@ -55,107 +55,150 @@ const goHome = () => {
 <style scoped>
 .user-avatar-container {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 1.5rem;
+  left: 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  background: rgba(26, 42, 74, 0.8);
-  backdrop-filter: blur(10px);
-  padding: 0.5rem 1rem;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(20, 15, 45, 0.95));
+  backdrop-filter: blur(15px);
+  padding: 0.75rem 1.5rem;
   border-radius: 50px;
-  border: 2px solid #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-  z-index: 1000;
+  border: 3px solid transparent;
+  background-image: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(20, 15, 45, 0.95)),
+                    linear-gradient(90deg, #8a2be2, #1e90ff, #ff1493);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 40px rgba(138, 43, 226, 0.5),
+              0 0 70px rgba(30, 144, 255, 0.3),
+              0 8px 25px rgba(0, 0, 0, 0.4);
+  z-index: 1100;
+  animation: avatarFloat 3s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 .avatar-circle {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #0a192f;
-  box-shadow: 0 0 15px currentColor;
-  font-family: "Fira Code", monospace;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  box-shadow: 0 0 25px currentColor,
+              0 0 40px rgba(255, 255, 255, 0.5),
+              inset 0 0 20px rgba(0, 0, 0, 0.3);
+  font-family: "Share Tech Mono", monospace;
+  border: 3px solid rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  transition: all 0.3s ease;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 35px currentColor,
+              0 0 60px rgba(255, 255, 255, 0.7);
 }
 
 .player-name-text {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #00f0ff;
-  font-family: "Fira Code", monospace;
-  text-shadow: 0 0 5px #00f0ff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #1e90ff, #8a2be2, #ff1493);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  font-family: "Share Tech Mono", monospace;
+  filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.8));
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.05rem;
 }
 
 .btn-settings {
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 2px solid #f021b9;
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.3), rgba(255, 20, 147, 0.3));
+  border: 2.5px solid #8a2be2;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
   flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
 }
 
 .btn-home {
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 2px solid #00f0ff;
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, rgba(30, 144, 255, 0.3), rgba(138, 43, 226, 0.3));
+  border: 2.5px solid #1e90ff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
   flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(30, 144, 255, 0.4);
 }
 
 .home-icon {
-  width: 20px;
-  height: 20px;
-  color: #00f0ff;
-  transition: all 0.3s ease;
+  width: 22px;
+  height: 22px;
+  color: #1e90ff;
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 0 5px rgba(30, 144, 255, 0.8));
 }
 
 .settings-icon {
-  width: 20px;
-  height: 20px;
-  color: #f021b9;
-  transition: all 0.3s ease;
+  width: 22px;
+  height: 22px;
+  color: #8a2be2;
+  transition: all 0.4s ease;
+  filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.8));
 }
 
 .btn-home:hover {
-  background: #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+  background: linear-gradient(135deg, #1e90ff, #8a2be2);
+  border-color: #fff;
+  box-shadow: 0 0 30px rgba(30, 144, 255, 0.9),
+              0 0 50px rgba(138, 43, 226, 0.6);
+  transform: scale(1.15);
 }
 
 .btn-home:hover .home-icon {
-  color: #0a192f;
+  color: #fff;
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 1));
 }
 
 .btn-settings:hover {
-  background: #f021b9;
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
-  transform: rotate(90deg);
+  background: linear-gradient(135deg, #8a2be2, #ff1493);
+  border-color: #fff;
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.9),
+              0 0 50px rgba(255, 20, 147, 0.6);
+  transform: rotate(180deg) scale(1.15);
 }
 
 .btn-settings:hover .settings-icon {
-  color: #ffffff;
+  color: #fff;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 1));
 }
 
 @media (max-width: 768px) {

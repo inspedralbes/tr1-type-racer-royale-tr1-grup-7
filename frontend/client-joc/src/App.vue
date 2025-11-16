@@ -1,13 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from "vue";
-import GameEngine from "./components/GameEngine.vue";
 import GameEngineWords from "./components/GameEngineWords.vue";
 import GameView from "./components/GameView.vue";
 import RoomList from "./components/RoomList.vue";
 import RoomListWords from "./components/RoomListWords.vue";
-import CreateRoom from "./components/CreateRoom.vue";
 import CreateRoomWords from "./components/CreateRoomWords.vue";
-import RoomListText from "./components/RoomListText.vue";
 import CreateRoomText from "./components/CreateRoomText.vue";
 import LobbyRoom from "./components/LobbyRoom.vue";
 import WelcomeScreen from "./components/WelcomeScreen.vue";
@@ -471,10 +468,7 @@ watch(volume, (newVolume) => {
 
 <template>
   <main class="app-container">
-    <!-- Header solo se muestra después de la pantalla de inicio -->
-    <header v-if="vistaActual !== 'inicio'">
-      <h1 class="main-title">TECLAZO 🎮</h1>
-    </header>
+    <!-- Header removido - ya no se muestra TECLAZO -->
 
     <!-- VISTA 0: PANTALLA DE BIENVENIDA -->
     <WelcomeScreen
@@ -495,7 +489,7 @@ watch(volume, (newVolume) => {
     <!-- VISTA 2: SELECCIÓN DE ACCIÓN (CREAR O UNIRSE) -->
     <RoomActionSelect
       v-else-if="vistaActual === 'salaEspera'"
-      @room-action="handleRoomAction"
+      @select-action="handleRoomAction"
       @back="backToModeSelect"
       key="roomAction"
     />
@@ -532,14 +526,14 @@ watch(volume, (newVolume) => {
         @back="backToRoomAction"
         key="createRoomWords"
       />
-      <CreateRoom 
+      <CreateRoomText 
         v-else-if="vistaActual === 'createRoom' && modoJuego === 'texto'"
         :player-name="nomJugador"
         @create-room="createRoom"
         @notify="handleNotify"
         @go-to-room-list="vistaActual = 'roomList'"
         @back="backToRoomAction"
-        key="createRoom"
+        key="createRoomText"
       />
 
       <!-- VISTA 5: LOBBY -->
@@ -564,6 +558,7 @@ watch(volume, (newVolume) => {
         :tematica="currentRoomConfig?.theme || 'aleatori'"
         :timeLimit="(currentRoomConfig?.timeLimit || 3) * 60"
         :gameText="gameText"
+        :numRounds="currentRoomConfig?.numRounds || 3"
         @back-to-lobby="vistaActual = 'lobby'"
         key="joc-texto"
       />
@@ -641,50 +636,17 @@ watch(volume, (newVolume) => {
   width: 100vw;
   height: 100vh;
   padding: 0;
+  margin: 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  overflow: hidden; /* Solicitud: no scroll en la lobby */
-  padding-top: clamp(1vh, 2vh, 24px); /* Pequeño margen superior global */
+  overflow: hidden;
+  background: #0a192f;
 }
 
-.main-title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 700;
-  font-family: "Share Tech Mono", monospace;
-  color: #f021b9;
-  margin: 0 0 2vh 0; /* El margen superior lo aporta el padding del contenedor */
-  text-transform: uppercase;
-  letter-spacing: clamp(0.3rem, 0.5vw, 0.8rem);
-  filter: drop-shadow(0 0 20px #f021b9) drop-shadow(0 0 40px #f021b9);
-  animation: glitch 3s infinite;
-  position: relative;
-  line-height: 1.15;
-  overflow: visible; /* Evitar recorte visual en animación */
-}
-
-@keyframes glitch {
-  0%,
-  90%,
-  100% {
-    transform: translate(0);
-  }
-  92% {
-    transform: translate(-2px, 2px);
-  }
-  94% {
-    transform: translate(2px, -2px);
-  }
-  96% {
-    transform: translate(-2px, -2px);
-  }
-}
-
-.title-accent {
-  color: #00f0ff;
-}
+/* Estilos del título removidos */
 
 /* --- Estils per a les Noves Vistes --- */
 .vista-container {

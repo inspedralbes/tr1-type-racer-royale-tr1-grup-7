@@ -166,14 +166,15 @@ const communicationManager = {
     socket.on("playerStreak", callback);
   },
 
-  // Solicitar nuevo texto para la siguiente ronda
-  requestNewRound() {
-    socket.emit('requestNewRound');
+  // Solicitar nueva ronda al servidor
+  requestNextRound() {
+    console.log("📤 Solicitando nueva ronda al servidor...");
+    socket.emit('requestNextRound');
   },
 
-  // Escuchar nuevo texto de ronda
-  onNewRoundText(callback) {
-    socket.on('newRoundText', callback);
+  // Escuchar nueva ronda con nuevo texto del servidor
+  onNextRound(callback) {
+    socket.on('nextRound', callback);
   }
 };
 

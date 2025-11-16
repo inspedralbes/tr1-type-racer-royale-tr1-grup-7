@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
-import { generarTextoLlarg, obtenerTematicas } from "../utils/textGenerator.js";
+// GameView - Pantalla de juego con auto-scroll y header compacto
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import communicationManager from "../services/communicationManager.js";
 
 const emit = defineEmits(["back-to-lobby"]);
@@ -23,6 +23,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  numRounds: {
+    type: Number,
+    default: 3,
+  },
 });
 
 // Estado del juego
@@ -39,6 +43,11 @@ const showCountdown = ref(true);
 const countdownNumber = ref(5);
 const showContent = ref(false);
 let countdownTimer = null;
+let gameTimer = null;
+
+// Sistema de rondas
+const currentRound = ref(1);
+const maxRounds = ref(3); // Por defecto 3 rondas
 
 // Estado por carácter: 'pending' | 'correct' | 'incorrect' | 'corrected'
 const charStatuses = ref([]);
@@ -54,6 +63,7 @@ const playersState = ref([]);
 
 // Inicializar el texto cuando se monta el componente
 onMounted(async () => {
+  maxRounds.value = props.numRounds; // Usar el número de rondas configurado
   generarNuevoTexto();
   initializePlayersState();
   setupMultiplayerListeners();
@@ -62,6 +72,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupMultiplayerListeners();
+  if (countdownTimer) clearInterval(countdownTimer);
+  if (gameTimer) clearInterval(gameTimer);
 });
 
 // Inicializar estado de jugadores desde las props
@@ -74,24 +86,28 @@ const initializePlayersState = () => {
     errors: 0,
     isTyping: false,
     lastKey: null,
+    currentWord: '', // Paraula que estan escrivint actualment
   }));
 };
 
-// Generar un nuevo texto según la temática
+// Inicializar texto recibido del servidor
 const generarNuevoTexto = () => {
-  console.log("🎮 Generando texto...");
+  console.log("🎮 Inicializando texto del servidor...");
+  console.log("🎮 props.gameText:", props.gameText);
+  console.log("🎮 props.gameText type:", typeof props.gameText);
+  console.log("🎮 props.gameText length:", props.gameText?.length);
 
-  // Si viene texto del servidor (sincronizado), usarlo
-  if (props.gameText) {
-    console.log("🎮 Usando texto del servidor (sincronizado)");
-    textToType.value = props.gameText;
+  // El texto SIEMPRE viene del servidor
+  if (!props.gameText || props.gameText.trim() === "") {
+    console.error("❌ No se recibió texto del servidor!");
+    // Texto de fallback para testing
+    textToType.value = "Este es un texto de prueba. El servidor debería enviar el texto real aquí. Por favor verifica la conexión con el backend.";
+    console.log("⚠️ Usando texto de fallback");
   } else {
-    // Fallback: generar localmente si no viene del servidor
-    console.log("🎮 Generando texto local con temática:", props.tematica);
-    textToType.value = generarTextoLlarg(props.tematica);
+    console.log("✅ Usando texto del servidor:", props.gameText.substring(0, 100) + "...");
+    textToType.value = props.gameText;
   }
 
-  console.log("🎮 Texto:", textToType.value.substring(0, 50) + "...");
   userInput.value = "";
   progress.value = 0;
   errors.value = 0;
@@ -105,7 +121,21 @@ const generarNuevoTexto = () => {
     { length: textToType.value.length },
     () => false
   );
+  
+  console.log("🎮 textToType inicializado con longitud:", textToType.value.length);
 };
+
+// Watcher para detectar cuando llega el gameText del servidor
+watch(() => props.gameText, (newText, oldText) => {
+  console.log("🔄 gameText ha cambiado!");
+  console.log("🔄 oldText:", oldText?.substring(0, 50));
+  console.log("🔄 newText:", newText?.substring(0, 50));
+  
+  if (newText && newText !== oldText && textToType.value === "") {
+    console.log("✅ Recargando texto porque llegó del servidor");
+    generarNuevoTexto();
+  }
+}, { immediate: true });
 
 // Iniciar cuenta atrás y mostrar contenido al finalizar
 const startCountdown = () => {
@@ -158,15 +188,15 @@ const endRound = () => {
   }
   
   if (currentRound.value < maxRounds.value) {
-    // Hay más rondas, preparar la siguiente
+    // Hay más rondas, solicitar al backend nuevo texto
     currentRound.value += 1;
-    console.log(`🎮 Preparando ronda ${currentRound.value}...`);
+    console.log(`🎮 Solicitando nueva ronda ${currentRound.value} al servidor...`);
     
-    // Generar nuevo texto para la siguiente ronda
-    generarNuevoTexto();
+    // Pedir al servidor que genere un nuevo texto para la siguiente ronda
+    communicationManager.requestNextRound();
     
-    // Reiniciar la cuenta atrás y el contenido
-    startCountdown();
+    // El servidor responderá con un evento "nextRound" que contendrá el nuevo texto
+    // La cuenta atrás se iniciará cuando llegue el nuevo texto
   } else {
     // Fin del juego
     console.log('🎉 ¡Juego terminado!');
@@ -218,6 +248,11 @@ const handleInput = (event) => {
   const typed = event.target.value;
   updateStatuses(typed);
   emitProgress(); // Emitir progreso a otros jugadores
+  
+  // Auto-scroll para seguir la posición del usuario
+  nextTick(() => {
+    autoScrollToCurrentChar();
+  });
   
   // Verificar si el jugador ha completado el texto
   if (typed.length >= textToType.value.length && progress.value === 100) {
@@ -288,6 +323,29 @@ const setupMultiplayerListeners = () => {
   communicationManager.onUpdatePlayerList?.((playerList) => {
     updatePlayerList(playerList);
   });
+
+  // Escuchar nueva ronda con nuevo texto del servidor
+  communicationManager.onNextRound?.((data) => {
+    console.log("🎮 Nueva ronda recibida del servidor:", data);
+    const { gameText: newText, round } = data;
+    
+    // Actualizar el texto
+    textToType.value = newText;
+    userInput.value = "";
+    progress.value = 0;
+    errors.value = 0;
+    totalErrors.value = 0;
+    
+    // Reiniciar estados por carácter
+    charStatuses.value = Array.from(
+      { length: newText.length },
+      () => "pending"
+    );
+    everIncorrect.value = Array.from({ length: newText.length }, () => false);
+    
+    // Iniciar cuenta atrás para la nueva ronda
+    startCountdown();
+  });
 };
 
 // Limpiar listeners al desmontar
@@ -322,12 +380,35 @@ const updatePlayerKeyPress = (data) => {
     playersState.value[playerIndex].lastKey = key;
     playersState.value[playerIndex].isTyping = true;
 
+    // Extreure la paraula actual que està escrivint el jugador
+    const playerProgress = playersState.value[playerIndex].progress;
+    const currentCharIndex = Math.floor((playerProgress / 100) * textToType.value.length);
+    
+    // Trobar els límits de la paraula actual
+    let wordStart = currentCharIndex;
+    let wordEnd = currentCharIndex;
+    
+    // Anar enrere fins trobar un espai o l'inici del text
+    while (wordStart > 0 && textToType.value[wordStart - 1] !== ' ') {
+      wordStart--;
+    }
+    
+    // Anar endavant fins trobar un espai o el final del text
+    while (wordEnd < textToType.value.length && textToType.value[wordEnd] !== ' ') {
+      wordEnd++;
+    }
+    
+    // Extreure la paraula
+    const currentWord = textToType.value.substring(wordStart, wordEnd).trim();
+    playersState.value[playerIndex].currentWord = currentWord;
+
     // Limpiar después de un tiempo
     setTimeout(() => {
       if (playersState.value[playerIndex]) {
         playersState.value[playerIndex].isTyping = false;
+        playersState.value[playerIndex].currentWord = '';
       }
-    }, 200);
+    }, 500);
   }
 };
 
@@ -346,6 +427,7 @@ const updatePlayerList = (playerList) => {
         errors: 0,
         isTyping: false,
         lastKey: null,
+        currentWord: '',
       });
     } else {
       // Actualizar nombre si cambió
@@ -402,6 +484,48 @@ const getPlayerColor = (index) => {
 const getPlayerIndicator = (playerProgress) => {
   return Math.floor((playerProgress / 100) * textToType.value.length);
 };
+
+const textArray = computed(() => {
+  if (!textToType.value || typeof textToType.value !== 'string') return [];
+  return textToType.value.split('');
+});
+
+// Computed: siguiente tecla que debe presionar el usuario
+const nextKey = computed(() => {
+  if (userInput.value.length >= textToType.value.length) return null;
+  const nextChar = textToType.value[userInput.value.length];
+  if (nextChar === " ") return "SPACE";
+  return nextChar.toUpperCase();
+});
+
+// Ref para el contenedor del texto
+const textDisplayRef = ref(null);
+
+// Auto-scroll: hacer scroll automático para seguir la posición actual del usuario
+const autoScrollToCurrentChar = () => {
+  if (!textDisplayRef.value) return;
+  
+  // Buscar el span con la clase 'is-current'
+  const currentSpan = textDisplayRef.value.querySelector('.is-current');
+  if (!currentSpan) return;
+  
+  const container = textDisplayRef.value;
+  const spanRect = currentSpan.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  
+  // Calcular si el carácter actual está fuera de la vista
+  const isAboveView = spanRect.top < containerRect.top + 60; // margen superior
+  const isBelowView = spanRect.bottom > containerRect.bottom - 60; // margen inferior
+  
+  if (isAboveView || isBelowView) {
+    // Hacer scroll para centrar el carácter actual
+    const scrollOffset = spanRect.top - containerRect.top - (containerRect.height / 2) + (spanRect.height / 2);
+    container.scrollBy({
+      top: scrollOffset,
+      behavior: 'smooth'
+    });
+  }
+};
 </script>
 
 <template>
@@ -418,29 +542,61 @@ const getPlayerIndicator = (playerProgress) => {
       </div>
       <div class="countdown-label">PREPARATS...</div>
     </div>
-    <!-- Barra superior: Tiempo, WPM, progreso y errores -->
+    <!-- Barra superior: Estadístiques del joc -->
     <div class="game-header">
-      <div class="time-section">
-        <div class="time-label">Temps</div>
-        <div class="time-value" :class="{ 'warning': timeRemaining <= 10 && timeRemaining > 0 }">{{ timeRemaining }}s</div>
-      </div>
-      <div class="wpm-section">
-        <div class="wpm-label">WPM</div>
-        <div class="wpm-value">{{ calculateWPM() }}</div>
-      </div>
-      <div class="round-section">
-        <div class="round-label">Ronda</div>
-        <div class="round-value">{{ currentRound }} / {{ maxRounds }}</div>
-      </div>
-      <div class="progress-section">
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+      <div class="stat-card time-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-content">
+          <div class="stat-label">TEMPS</div>
+          <div class="stat-value" :class="{ 'warning': timeRemaining <= 10 && timeRemaining > 0 }">{{ timeRemaining }}s</div>
         </div>
-        <div class="progress-text">{{ progress }}%</div>
       </div>
-      <div class="errors-section">
-        <div class="errors-label">Errors</div>
-        <div class="errors-value">{{ errors }}</div>
+      
+      <div class="stat-card wpm-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-content">
+          <div class="stat-label">PPM</div>
+          <div class="stat-value">{{ calculateWPM() }}</div>
+        </div>
+      </div>
+      
+      <div class="stat-card round-card">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-content">
+          <div class="stat-label">RONDA</div>
+          <div class="stat-value">{{ currentRound }} / {{ maxRounds }}</div>
+        </div>
+      </div>
+      
+      <div class="progress-card">
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+            <!-- Avatars dels jugadors a la barra de progrés -->
+            <div
+              v-for="(player, index) in playersState"
+              :key="'progress-avatar-' + player.id"
+              class="progress-avatar"
+              :style="{
+                left: player.progress + '%',
+                backgroundColor: getPlayerColor(index),
+              }"
+              :class="{ 'avatar-typing': player.isTyping }"
+              :title="player.name + ' - ' + player.progress + '%'"
+            >
+              {{ player.name.charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="progress-label">{{ progress }}%</div>
+        </div>
+      </div>
+      
+      <div class="stat-card errors-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-content">
+          <div class="stat-label">ERRORS</div>
+          <div class="stat-value">{{ errors }}</div>
+        </div>
       </div>
     </div>
 
@@ -465,11 +621,24 @@ const getPlayerIndicator = (playerProgress) => {
                   {{ player.name.charAt(0).toUpperCase() }}
                 </div>
                 <div class="player-info">
-                  <div class="player-name">{{ player.name }}</div>
+                  <div class="player-name">
+                    {{ player.name }}
+                    <!-- Icona "Escrivint..." -->
+                    <span v-if="player.isTyping" class="typing-indicator">
+                      <span class="typing-dot"></span>
+                      <span class="typing-dot"></span>
+                      <span class="typing-dot"></span>
+                    </span>
+                  </div>
                   <div class="player-stats">
-                    <span class="stat-wpm">{{ player.wpm }} WPM</span>
+                    <span class="stat-wpm">{{ player.wpm }} PPM</span>
                   </div>
                 </div>
+              </div>
+              <!-- Previsualització de la paraula que estan escrivint -->
+              <div v-if="player.isTyping && player.currentWord" class="player-current-word">
+                <span class="word-label">Escrivint:</span>
+                <span class="word-text">{{ player.currentWord }}</span>
               </div>
               <div class="player-progress-bar">
                 <div
@@ -490,28 +659,34 @@ const getPlayerIndicator = (playerProgress) => {
 
         <!-- Área de texto principal -->
         <div class="text-area-wrapper">
-          <div class="text-display">
+          <div class="text-display" ref="textDisplayRef">
             <p class="text-to-type">
-              <span
-                v-for="(ch, idx) in textToType.split('')"
-                :key="idx"
-                :class="[
-                  statusClass(charStatuses[idx]),
-                  { 'is-space': ch === ' ' },
-                ]"
-              >
-                <!-- Indicadores de posición de otros jugadores -->
+              <template v-if="textArray.length">
                 <span
-                  v-for="(player, pIndex) in playersState.filter(
-                    (p) => getPlayerIndicator(p.progress) === idx
-                  )"
-                  :key="'indicator-' + player.id"
-                  class="player-indicator"
-                  :style="{ backgroundColor: getPlayerColor(pIndex) }"
-                  :title="player.name"
-                ></span>
-                {{ ch === " " ? "\u00A0" : ch }}
-              </span>
+                  v-for="(ch, idx) in textArray"
+                  :key="idx"
+                  :class="[
+                    statusClass(charStatuses[idx]),
+                    { 'is-space': ch === ' ' },
+                    { 'is-current': idx === userInput.length },
+                  ]"
+                >
+                  <!-- Indicadores de posición de otros jugadores -->
+                  <span
+                    v-for="(player, pIndex) in playersState.filter(
+                      (p) => getPlayerIndicator(p.progress) === idx
+                    )"
+                    :key="'indicator-' + player.id"
+                    class="player-indicator"
+                    :style="{ backgroundColor: getPlayerColor(pIndex) }"
+                    :title="player.name"
+                  ></span>
+                  {{ ch === " " ? "\u00A0" : ch }}
+                </span>
+              </template>
+              <template v-else>
+                <span style="color:#f021b9;font-size:1.2rem;">No s'ha rebut cap text del servidor.</span>
+              </template>
             </p>
           </div>
 
@@ -521,7 +696,7 @@ const getPlayerIndicator = (playerProgress) => {
               v-model="userInput"
               @input="handleInput"
               @keydown="onKeyDown"
-              placeholder="Empieza a escribir..."
+              placeholder="Comença a escriure..."
               class="typing-input"
               :disabled="!showContent"
               ref="typingInputRef"
@@ -542,6 +717,7 @@ const getPlayerIndicator = (playerProgress) => {
             :key="letter"
             :class="{
               pressed: activeKey === letter,
+              'next-key': nextKey === letter,
               'other-player-press': playersState.some(
                 (p) => p.isTyping && p.lastKey === letter
               ),
@@ -565,6 +741,7 @@ const getPlayerIndicator = (playerProgress) => {
             :key="letter"
             :class="{
               pressed: activeKey === letter,
+              'next-key': nextKey === letter,
               'other-player-press': playersState.some(
                 (p) => p.isTyping && p.lastKey === letter
               ),
@@ -588,6 +765,7 @@ const getPlayerIndicator = (playerProgress) => {
             :key="letter"
             :class="{
               pressed: activeKey === letter,
+              'next-key': nextKey === letter,
               'other-player-press': playersState.some(
                 (p) => p.isTyping && p.lastKey === letter
               ),
@@ -609,12 +787,13 @@ const getPlayerIndicator = (playerProgress) => {
             class="key wide"
             :class="{
               pressed: activeKey === 'SPACE',
+              'next-key': nextKey === 'SPACE',
               'other-player-press': playersState.some(
                 (p) => p.isTyping && p.lastKey === 'SPACE'
               ),
             }"
           >
-            Space
+            Espai
             <span
               v-for="(player, pIndex) in playersState.filter(
                 (p) => p.isTyping && p.lastKey === 'SPACE'
@@ -628,6 +807,7 @@ const getPlayerIndicator = (playerProgress) => {
             class="key backspace"
             :class="{
               pressed: activeKey === 'BACKSPACE',
+              'next-key': nextKey === 'BACKSPACE',
               'other-player-press': playersState.some(
                 (p) => p.isTyping && p.lastKey === 'BACKSPACE'
               ),
@@ -647,7 +827,7 @@ const getPlayerIndicator = (playerProgress) => {
       </div>
     </div>
 
-    <!-- Botón flotante para volver al lobby -->
+    <!-- Botó flotant per tornar al lobby -->
     <button @click="emit('back-to-lobby')" class="btn-back">← Lobby</button>
   </div>
 </template>
@@ -750,148 +930,128 @@ const getPlayerIndicator = (playerProgress) => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0a192f;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 240, 255, 0.03) 0px,
-    transparent 1px,
-    transparent 2px,
-    rgba(0, 240, 255, 0.03) 3px
-  );
-  color: #e0e0e0;
+  background: linear-gradient(135deg, #1a0b2e 0%, #2d1654 100%);
+  color: #ffffff;
   overflow: hidden;
-  padding: 0.75rem;
+  padding: 1rem;
   box-sizing: border-box;
-  gap: 0.75rem;
+  gap: 1rem;
   font-family: "Share Tech Mono", monospace;
 }
 
-/* ===== HEADER: Tiempo, Progreso, Errores ===== */
+/* ===== HEADER: Estadísticas del juego ===== */
 .game-header {
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: 0.75rem 1.25rem;
-  border-radius: 10px;
-  border: 2px solid #00f0ff;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 10px rgba(0, 240, 255, 0.05);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 2fr repeat(1, 1fr);
+  gap: 0.4rem;
+  padding: 0;
 }
 
-.time-section {
+.stat-card {
+  background: rgba(26, 11, 46, 0.7);
+  backdrop-filter: blur(10px);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.5),
+              0 0 35px rgba(240, 33, 185, 0.3);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.4));
+  flex-shrink: 0;
+}
+
+.stat-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
+  gap: 0.02rem;
+  flex: 1;
+  min-width: 0;
 }
 
-.time-label {
-  font-size: 0.85rem;
+.stat-label {
+  font-size: 0.55rem;
   color: #00f0ff;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: "Share Tech Mono", monospace;
-}
-
-.time-value {
-  font-size: 1.5rem;
+  letter-spacing: 0.06rem;
   font-weight: 700;
-  color: #f021b9;
-  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
-  font-family: "Fira Code", monospace;
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.35);
 }
 
-.time-value.warning {
-  color: #ff9500;
-  text-shadow: 0 0 10px #ff9500, 0 0 20px #ff9500;
-  animation: pulse-warning 1s ease-in-out infinite;
+.stat-value {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(240, 33, 185, 0.4);
+  line-height: 1;
+}
+
+.stat-value.warning {
+  color: #ff4500;
+  text-shadow: 0 0 15px #ff4500, 0 0 30px #ff4500;
+  animation: pulse-warning 0.8s ease-in-out infinite;
 }
 
 @keyframes pulse-warning {
   0%, 100% {
+    transform: scale(1);
     opacity: 1;
   }
   50% {
-    opacity: 0.6;
+    transform: scale(1.05);
+    opacity: 0.85;
   }
 }
 
-.wpm-section {
+.progress-card {
+  background: rgba(26, 11, 46, 0.7);
+  backdrop-filter: blur(10px);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  grid-column: span 2;
 }
 
-.wpm-label {
-  font-size: 0.85rem;
-  color: #00f0ff;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: "Share Tech Mono", monospace;
-}
-
-.wpm-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #39FF14;
-  text-shadow: 0 0 10px #39FF14, 0 0 20px #39FF14;
-  font-family: "Fira Code", monospace;
-}
-
-.round-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
-}
-
-.round-label {
-  font-size: 0.85rem;
-  color: #00f0ff;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: "Share Tech Mono", monospace;
-}
-
-.round-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f021b9;
-  text-shadow: 0 0 10px #f021b9, 0 0 20px #f021b9;
-  font-family: "Fira Code", monospace;
-}
-
-.progress-section {
+.progress-bar-wrapper {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .progress-bar {
-  width: 100%;
-  height: 16px;
-  background: rgba(10, 25, 47, 0.8);
+  flex: 1;
+  height: 12px;
+  background: rgba(10, 15, 30, 0.8);
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid #00f0ff;
+  border: 2px solid rgba(0, 240, 255, 0.3);
   position: relative;
-  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #00f0ff 0%, #f021b9 100%);
-  transition: width 0.3s ease;
-  box-shadow: 0 0 15px rgba(240, 33, 185, 0.8);
+  background: linear-gradient(90deg, #00f0ff 0%, #f021b9 100%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.8);
   position: relative;
 }
 
@@ -905,10 +1065,10 @@ const getPlayerIndicator = (playerProgress) => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.4),
     transparent
   );
-  animation: shimmer 2s infinite;
+  animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
@@ -920,19 +1080,13 @@ const getPlayerIndicator = (playerProgress) => {
   }
 }
 
-.progress-text {
+.progress-label {
   font-size: 0.75rem;
   color: #00f0ff;
-  font-weight: 600;
-  font-family: "Fira Code", monospace;
-}
-
-.errors-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 80px;
+  font-weight: 900;
+  min-width: 35px;
+  text-align: right;
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.4);
 }
 
 .errors-label {
@@ -951,86 +1105,75 @@ const getPlayerIndicator = (playerProgress) => {
   font-family: "Fira Code", monospace;
 }
 
-/* ===== CONTENT: Texto y Input ===== */
+/* ===== CONTENT: Layout Centrado y Jerárquico ===== */
 .game-content {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   min-height: 0;
   overflow: hidden;
 }
 
-.text-display {
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: 1.25rem 2rem;
-  border-radius: 10px;
-  border: 2px solid #00f0ff;
+.game-content-wrapper {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.text-area-wrapper {
   flex: 1;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.text-display {
+  background: linear-gradient(135deg, rgba(10,15,30,0.95) 0%, rgba(26,11,46,0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(90deg, #00f0ff, #f021b9) 1;
+  border-radius: 20px;
+  padding: 3rem 4rem;
+  width: 100%;
+  max-width: 1100px;
+  overflow-y: auto;
+  box-shadow: 0 0 50px rgba(0,240,255,0.4), 
+              0 0 80px rgba(240,33,185,0.25),
+              inset 0 0 30px rgba(0,240,255,0.08);
+  position: relative;
+  min-height: 280px;
   display: flex;
   align-items: center;
-  width: 100%;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 15px rgba(0, 240, 255, 0.05);
+  justify-content: center;
 }
 
 .text-to-type {
-  font-size: 1.3rem;
-  line-height: 1.8;
-  color: #e0e0e0;
-  text-align: justify;
-  text-align-last: left;
+  font-size: 2.4rem;
+  line-height: 2.6;
+  color: #ffffff;
+  text-align: left;
   margin: 0;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
   word-wrap: break-word;
   white-space: normal;
   width: 100%;
-  font-family: "Fira Code", monospace;
-}
-
-.input-area {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  align-items: center;
-}
-
-.typing-input {
-  width: 900px;
-  max-width: 100%;
-  padding: 1rem 0;
-  font-size: 1.2rem;
-  font-family: "Fira Code", monospace;
-  background: rgba(10, 25, 47, 0.9);
-  color: #00f0ff;
-  border: 2px solid #00f0ff;
-  border-radius: 10px;
-  outline: none;
-  transition: all 0.3s ease;
-  margin: 0 auto;
-  box-sizing: border-box;
-  text-align: center;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-}
-
-.typing-input:focus {
-  border-color: #f021b9;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.6),
-    inset 0 0 15px rgba(240, 33, 185, 0.1);
-  background: rgba(10, 25, 47, 1);
-  color: #f021b9;
-}
-
-.typing-input::placeholder {
-  color: rgba(0, 240, 255, 0.4);
   font-family: "Share Tech Mono", monospace;
+  position: relative;
+  z-index: 10;
+  text-shadow: 0 0 15px rgba(0,240,255,0.6), 0 0 25px rgba(240,33,185,0.4);
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
 }
 
-/* ===== FOOTER: Teclado y Botón ===== */
+.text-to-type span {
+  display: inline;
+  transition: all 0.15s ease;
+}
+
+/* ===== FOOTER: Teclado Visual ===== */
 .game-footer {
   flex: 0 0 auto;
   display: flex;
@@ -1041,18 +1184,18 @@ const getPlayerIndicator = (playerProgress) => {
 }
 
 .keyboard-visual {
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  padding: 1.25rem 0;
-  border-radius: 12px;
-  border: 2px solid #00f0ff;
+  background: rgba(26, 11, 46, 0.7);
+  backdrop-filter: blur(12px);
+  padding: 1rem 1.5rem;
+  border-radius: 14px;
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
   max-width: 900px;
   width: 100%;
-  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4),
-    inset 0 0 15px rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.05);
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -1064,115 +1207,238 @@ const getPlayerIndicator = (playerProgress) => {
 }
 
 .key {
-  min-width: 50px;
-  height: 50px;
+  position: relative;
+  min-width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #1a2a4a, #0f1a2f);
-  border: 2px solid #00f0ff;
+  background: linear-gradient(145deg, rgba(10, 15, 30, 0.9), rgba(20, 25, 45, 0.9));
+  border: 2px solid rgba(0, 240, 255, 0.5);
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #00f0ff;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: default;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25), inset 0 2px 4px rgba(0, 240, 255, 0.1);
   font-family: "Share Tech Mono", monospace;
+  overflow: hidden;
+}
+
+.key::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 240, 255, 0.1) 0%,
+    transparent 50%,
+    rgba(240, 33, 185, 0.1) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.key:hover::before {
+  opacity: 1;
 }
 
 .key:hover {
-  background: linear-gradient(145deg, #1f3557, #142135);
+  background: linear-gradient(145deg, rgba(10, 15, 30, 1), rgba(30, 35, 55, 1));
   border-color: #f021b9;
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.6);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 0 25px rgba(240, 33, 185, 0.7),
+              0 8px 15px rgba(0, 0, 0, 0.4);
   color: #f021b9;
 }
 
-/* Tecla presionada (efecto cuando el usuario pulsa una tecla física) */
+/* Efecto brillo sutil en teclas */
+.key::after {
+  content: "";
+  position: absolute;
+  top: -150%;
+  left: -50%;
+  width: 100%;
+  height: 300%;
+  transform: rotate(25deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  transition: transform 0.6s ease;
+}
+
+.key:hover::after {
+  transform: translateX(200%) rotate(25deg);
+}
+
+/* Tecla presionada activamente */
 .key.pressed {
-  transform: translateY(2px);
-  background: linear-gradient(180deg, #f021b9, #ff00ff);
+  transform: translateY(2px) scale(0.98);
+  background: linear-gradient(180deg, #f021b9, #d01a9f);
   color: #ffffff;
-  box-shadow: 0 0 30px rgba(240, 33, 185, 0.8) inset,
-    0 0 20px rgba(240, 33, 185, 0.6);
   border-color: #f021b9;
+  box-shadow: 0 0 35px rgba(240, 33, 185, 1),
+              inset 0 0 20px rgba(240, 33, 185, 0.6);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+
+/* Siguiente tecla a presionar - destacada con animación */
+.key.next-key {
+  background: linear-gradient(145deg, rgba(0, 240, 255, 0.3), rgba(0, 200, 220, 0.3)) !important;
+  border-color: #00f0ff !important;
+  border-width: 3px !important;
+  color: #00f0ff !important;
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.9),
+              0 0 50px rgba(0, 240, 255, 0.6),
+              inset 0 0 25px rgba(0, 240, 255, 0.3) !important;
+  animation: nextKeyPulse 1.5s ease-in-out infinite;
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+@keyframes nextKeyPulse {
+  0%, 100% {
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.9),
+                0 0 50px rgba(0, 240, 255, 0.6),
+                inset 0 0 25px rgba(0, 240, 255, 0.3);
+    transform: scale(1.1);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(0, 240, 255, 1),
+                0 0 75px rgba(0, 240, 255, 0.8),
+                inset 0 0 35px rgba(0, 240, 255, 0.5);
+    transform: scale(1.15);
+  }
+}
 }
 
 .key.wide {
   flex: 1 1 auto;
-  min-width: 200px;
-  max-width: 400px;
+  min-width: 220px;
+  max-width: 450px;
 }
+
 .key.backspace {
-  min-width: 100px;
-  font-size: 1.2rem;
+  min-width: 110px;
+  font-size: 1.3rem;
 }
 
 /* Estados de los caracteres del texto */
 .text-to-type span {
   display: inline;
-  transition: color 0.15s ease;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+  position: relative;
+  padding: 0; /* evitar desplazamientos */
 }
 
-/* Correcto: color verde neón */
+/* Correcto: verde neón brillante */
 .char-correct {
   color: #39ff14;
-  text-shadow: 0 0 5px #39ff14;
+  text-shadow: 0 0 8px #39ff14, 0 0 12px #39ff14;
+  font-weight: 700;
 }
 
-/* Incorrecto: color rojo brillante */
+/* Incorrecto: rojo intenso con animación */
 .char-incorrect {
-  color: #ff0000;
-  text-shadow: 0 0 5px #ff0000;
-  animation: errorPulse 0.3s ease;
+  color: #ff1744 !important;
+  text-shadow: 0 0 12px rgba(255, 23, 68, 0.9) !important;
 }
 
-@keyframes errorPulse {
-  0%,
-  100% {
-    opacity: 1;
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* Corregido: naranja/amarillo con fondo */
+.char-corrected {
+  color: #ffa726;
+  text-shadow: 0 0 10px #ffa726, 0 0 15px #ff9800;
+}
+
+/* Cursor actual con animación de pulso */
+.text-to-type span.is-current {
+  background: transparent !important;
+}
+
+.text-to-type span.is-current::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #00f0ff, #f021b9);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 1),
+              0 0 25px rgba(240, 33, 185, 0.9);
+  animation: lineGlow 1s ease-in-out infinite;
+}
+
+@keyframes currentPulse {
+  0%, 100% {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(240, 33, 185, 0.3));
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.8), 0 0 30px rgba(240, 33, 185, 0.6);
   }
   50% {
-    opacity: 0.5;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.5), rgba(240, 33, 185, 0.5));
+    box-shadow: 0 0 30px rgba(0, 240, 255, 1), 0 0 45px rgba(240, 33, 185, 0.9);
   }
 }
 
-/* Corregido: color amarillo-naranja neón */
-.char-corrected {
-  color: #ffa500;
-  text-shadow: 0 0 8px #ffa500, 0 0 15px #ff8c00;
+@keyframes lineGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 1), 0 0 25px rgba(240, 33, 185, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 240, 255, 1), 0 0 40px rgba(240, 33, 185, 1);
+  }
+}
+
+.text-to-type span.is-space.is-current::after {
+  width: 40%;
 }
 
 .btn-back {
   position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
   font-family: "Share Tech Mono", monospace;
-  background: rgba(10, 25, 47, 0.9);
+  background: rgba(26, 11, 46, 0.9);
   color: #00f0ff;
-  border: 2px solid #00f0ff;
-  border-radius: 6px;
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  opacity: 0.7;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
   z-index: 100;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
   text-transform: uppercase;
-  letter-spacing: 0.1rem;
+  letter-spacing: 0.12em;
 }
 
 .btn-back:hover {
   background: rgba(240, 33, 185, 0.2);
-  border-color: #f021b9;
   color: #f021b9;
-  opacity: 1;
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.5);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.7),
+              0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-back:active {
+  transform: translateY(-1px) scale(1.02);
 }
 
 /* ===== MULTIJUGADOR: Estilos ===== */
@@ -1185,80 +1451,131 @@ const getPlayerIndicator = (playerProgress) => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative; /* para posicionar el panel de jugadores fijo dentro del contenedor */
 }
 
-/* Panel lateral de jugadores */
+/* Panel de jugadores (abajo a la izquierda) */
 .players-panel {
-  flex: 0 0 260px;
-  background: #1a2a4a;
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  border: 2px solid #00f0ff;
-  padding: 1rem;
+  position: fixed;
+  left: 0.8rem;
+  bottom: 0.8rem;
+  width: 230px;
+  max-height: 40vh;
+  background: rgba(26, 11, 46, 0.8);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 2px solid;
+  border-image: linear-gradient(135deg, #00f0ff, #f021b9) 1;
+  padding: 0.7rem;
   overflow-y: auto;
-  max-height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3),
-    inset 0 0 10px rgba(0, 240, 255, 0.05);
+  z-index: 1200;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.05);
 }
 
+/* Asegurar contexto de posicionamiento */
+.game-content-wrapper { position: relative; }
+
 .panel-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 900;
   color: #00f0ff;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.6rem 0;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 0.12em;
   font-family: "Share Tech Mono", monospace;
-  text-shadow: 0 0 10px #00f0ff;
+  text-shadow: 0 0 12px #00f0ff, 0 0 20px rgba(0, 240, 255, 0.4);
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(0, 240, 255, 0.3);
 }
 
 .player-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex: 1;
   overflow-y: auto;
 }
 
 /* Tarjeta de jugador */
 .player-card {
-  background: rgba(10, 25, 47, 0.5);
-  border: 1px solid #00f0ff;
-  border-radius: 8px;
-  padding: 0.65rem;
-  transition: all 0.2s ease;
+  background: rgba(10, 15, 30, 0.65);
+  border: 2px solid rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  padding: 0.6rem;
+  transition: all 0.3s ease;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 240, 255, 0.05) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.player-card:hover::before {
+  opacity: 1;
 }
 
 .player-card.is-typing {
-  transform: scale(1.02);
-  box-shadow: 0 0 20px rgba(240, 33, 185, 0.5);
+  transform: translateX(4px);
+  box-shadow: 0 0 30px rgba(240, 33, 185, 0.7),
+              0 0 15px rgba(0, 240, 255, 0.3);
   border-color: #f021b9;
-  background: rgba(240, 33, 185, 0.1);
+  background: rgba(240, 33, 185, 0.15);
+}
+
+.player-card.is-typing::before {
+  background: linear-gradient(
+    135deg,
+    rgba(240, 33, 185, 0.15) 0%,
+    transparent 50%
+  );
+  opacity: 1;
 }
 
 .player-header {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
 }
 
 .player-avatar {
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #1a0b2e;
   flex-shrink: 0;
+  border: 2px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.player-card.is-typing .player-avatar {
+  border-color: #f021b9;
+  box-shadow: 0 0 15px rgba(240, 33, 185, 0.6);
+  transform: scale(1.1);
 }
 
 .player-info {
@@ -1267,43 +1584,64 @@ const getPlayerIndicator = (playerProgress) => {
 }
 
 .player-name {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #00f0ff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: "Fira Code", monospace;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  margin-bottom: 0.2rem;
 }
 
 .player-stats {
   font-size: 0.75rem;
-  color: #e0e0e0;
-  margin-top: 2px;
-  font-family: "Fira Code", monospace;
+  color: #c0c0c0;
+  font-family: "Share Tech Mono", monospace;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .stat-wpm {
-  font-weight: 600;
+  font-weight: 700;
   color: #39ff14;
-  text-shadow: 0 0 5px #39ff14;
+  text-shadow: 0 0 8px #39ff14;
 }
 
 .player-progress-bar {
   width: 100%;
-  height: 6px;
-  background: rgba(10, 25, 47, 0.8);
+  height: 8px;
+  background: rgba(10, 15, 30, 0.9);
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 0.4rem;
-  border: 1px solid #00f0ff;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .player-progress-fill {
   height: 100%;
-  transition: width 0.3s ease;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 999px;
-  box-shadow: 0 0 10px currentColor;
+  box-shadow: 0 0 12px currentColor;
+  position: relative;
+}
+
+.player-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
 }
 
 .player-bottom {
@@ -1311,17 +1649,18 @@ const getPlayerIndicator = (playerProgress) => {
   justify-content: space-between;
   align-items: center;
   font-size: 0.75rem;
-  font-family: "Fira Code", monospace;
+  font-family: "Share Tech Mono", monospace;
+  font-weight: 700;
 }
 
 .player-progress-text {
   color: #00f0ff;
-  font-weight: 600;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
 }
 
 .player-errors {
-  color: #ff0000;
-  text-shadow: 0 0 5px #ff0000;
+  color: #ff1744;
+  text-shadow: 0 0 8px #ff1744;
 }
 
 /* Área de texto adaptada */
@@ -1387,148 +1726,443 @@ const getPlayerIndicator = (playerProgress) => {
   );
 }
 
+/* ===== AVATARS A LA BARRA DE PROGRÉS ===== */
+.progress-bar {
+  position: relative; /* Per posicionar els avatars */
+}
+
+.progress-avatar {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #1a0b2e;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 12px currentColor, 0 0 20px rgba(0, 0, 0, 0.5);
+  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+  z-index: 100;
+  cursor: pointer;
+  font-family: "Share Tech Mono", monospace;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.progress-avatar:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: 150;
+  border-width: 3px;
+}
+
+.progress-avatar.avatar-typing {
+  animation: avatarPulse 0.6s ease-in-out infinite;
+  border-width: 3px !important;
+  box-shadow: 0 0 20px currentColor, 0 0 35px currentColor !important;
+}
+
+@keyframes avatarPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+/* ===== INDICADOR "ESCRIVINT..." ===== */
+.typing-indicator {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 0.5rem;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00f0ff;
+  animation: typingDotBounce 1.4s infinite ease-in-out;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDotBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+/* ===== PREVISUALITZACIÓ DE LA PARAULA ACTUAL ===== */
+.player-current-word {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 240, 255, 0.1);
+  border-left: 3px solid #00f0ff;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: "Share Tech Mono", monospace;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.1);
+  animation: wordFadeIn 0.3s ease;
+}
+
+@keyframes wordFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.word-label {
+  color: #00f0ff;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.word-text {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+  letter-spacing: 0.1em;
+}
+
 /* Responsive para pantallas pequeñas */
 @media (max-height: 700px) {
   .game-view {
-    padding: 0.5rem;
-    gap: 0.5rem;
+    padding: 0.6rem;
+    gap: 0.6rem;
   }
 
-  .game-header {
-    padding: 0.5rem 1rem;
+  .stat-card {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .stat-icon {
+    font-size: 1.4rem;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
   }
 
   .text-to-type {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    line-height: 1.6;
   }
 
   .typing-input {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    padding: 0.9rem 1.2rem;
+    font-size: 1.1rem;
   }
 
   .keyboard-visual {
-    padding: 0.75rem 1rem;
-    gap: 0.4rem;
+    padding: 1rem 1.5rem;
+    gap: 0.5rem;
   }
 
   .key {
-    min-width: 40px;
-    height: 40px;
-    font-size: 0.85rem;
+    min-width: 45px;
+    height: 45px;
+    font-size: 0.95rem;
   }
 
   .key.wide {
-    min-width: 150px;
+    min-width: 180px;
   }
 
   .key.backspace {
-    min-width: 80px;
+    min-width: 90px;
   }
 
   .players-panel {
-    padding: 0.75rem;
+    padding: 0.9rem;
   }
 
   .player-card {
-    padding: 0.75rem;
+    padding: 0.7rem;
   }
 }
 
 @media (max-width: 1400px) {
   .game-content {
-    flex-direction: column;
-  }
-
-  .main-game {
-    max-width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: 200px 1fr;
   }
 
   .players-panel {
+    flex: 0 0 auto;
     width: 100%;
     max-height: 200px;
     overflow-y: auto;
   }
 
-  .players-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  .text-area-wrapper {
+    min-height: 400px;
   }
 }
 
-/* Scrollbar cyberpunk para players-panel */
-.players-panel::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbar personalizado para panel de jugadores y texto */
+.players-panel::-webkit-scrollbar,
+.text-display::-webkit-scrollbar {
+  width: 10px;
 }
 
-.players-panel::-webkit-scrollbar-track {
-  background: rgba(10, 25, 47, 0.5);
-  border-radius: 4px;
+.players-panel::-webkit-scrollbar-track,
+.text-display::-webkit-scrollbar-track {
+  background: rgba(10, 15, 30, 0.6);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 240, 255, 0.2);
 }
 
-.players-panel::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f021b9, #00f0ff);
-  border-radius: 4px;
-  box-shadow: 0 0 10px rgba(240, 33, 185, 0.5);
-}
-
-.players-panel::-webkit-scrollbar-thumb:hover {
+.players-panel::-webkit-scrollbar-thumb,
+.text-display::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #00f0ff, #f021b9);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+  border-radius: 5px;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+.players-panel::-webkit-scrollbar-thumb:hover,
+.text-display::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f021b9, #00f0ff);
+  box-shadow: 0 0 18px rgba(240, 33, 185, 0.8);
 }
 
 @media (max-width: 768px) {
-  .time-value,
-  .errors-value {
-    font-size: 1.3rem;
+  .game-header {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .progress-card {
+    grid-column: span 2;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .stat-icon {
+    font-size: 1.5rem;
   }
 
   .text-to-type {
-    font-size: 1rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+  }
+
+  .text-display {
+    padding: 1.5rem;
   }
 
   .keyboard-visual {
-    padding: 0.75rem;
+    padding: 1rem;
     max-width: 100%;
   }
 
   .key {
-    min-width: 36px;
-    height: 36px;
-    font-size: 0.8rem;
+    min-width: 38px;
+    height: 38px;
+    font-size: 0.85rem;
   }
 
   .key.wide {
-    min-width: 120px;
+    min-width: 130px;
   }
 
   .key.backspace {
-    min-width: 70px;
+    min-width: 75px;
     font-size: 1rem;
   }
 
-  /* Panel de jugadores en móvil: arriba en lugar de al lado */
-  .game-content-wrapper {
-    flex-direction: column;
+  /* Panel de jugadores en móvil: horizontal scroll */
+  .game-content {
+    grid-template-rows: 180px 1fr;
   }
 
   .players-panel {
-    flex: 0 0 auto;
     max-height: 180px;
   }
 
   .player-list {
     flex-direction: row;
     overflow-x: auto;
-    gap: 0.75rem;
+    gap: 0.8rem;
   }
 
   .player-card {
-    min-width: 180px;
+    min-width: 190px;
+    flex-shrink: 0;
   }
 
   .btn-back {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.7rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    bottom: 1rem;
+    right: 1rem;
   }
 }
+
+/* ===== MILLORES FINALS: LAYOUT CENTRAT I JER ÀRQUIC ===== */
+.game-content {
+  flex: 1 !important;
+  display: flex !important;
+  gap: 1.5rem !important;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-columns: none !important;
+}
+
+.game-content-wrapper {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  flex: 1;
+}
+
+.text-area-wrapper {
+  flex: 1;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1.5rem !important;
+  padding: 2rem;
+  overflow: visible !important;
+}
+
+.text-display {
+  background: linear-gradient(135deg, rgba(10,15,30,0.98) 0%, rgba(26,11,46,0.98) 100%) !important;
+  border: 4px solid !important;
+  border-image: linear-gradient(90deg, #00f0ff, #f021b9) 1 !important;
+  border-radius: 18px !important;
+  padding: 2.5rem 3.5rem !important;
+  width: 100% !important;
+  max-width: 1400px !important;
+  max-height: 420px !important;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  box-shadow: 0 0 45px rgba(0,240,255,0.4), 0 0 75px rgba(240,33,185,0.25), inset 0 0 30px rgba(0,240,255,0.08) !important;
+  position: relative;
+  min-height: 260px !important;
+  display: block !important;
+  text-align: left !important;
+}
+
+.text-to-type {
+  font-size: 2.2rem !important;
+  line-height: 2.5 !important;
+  color: #ffffff !important;
+  text-align: left !important;
+  text-shadow: 0 0 15px rgba(0,240,255,0.5), 0 0 25px rgba(240,33,185,0.4), 0 2px 5px rgba(0,0,0,0.5) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  word-wrap: break-word !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+}
+
+.input-area {
+  display: flex;
+  width: 100%;
+  max-width: 1400px !important;
+  justify-content: center;
+}
+
+.typing-input {
+  width: 100% !important;
+  max-width: 1000px !important;
+  padding: 0.8rem 1.2rem !important;
+  font-size: 1.25rem !important;
+  background: rgba(10, 15, 30, 0.95) !important;
+  color: #00f0ff !important;
+  text-align: center !important;
+  border: 3px solid !important;
+  border-image: linear-gradient(90deg, #00f0ff, #f021b9) 1 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), inset 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  transition: all 0.2s ease !important;
+}
+
+.typing-input:focus {
+  border-image: linear-gradient(90deg, #f021b9, #00f0ff) 1 !important;
+  border-width: 5px !important;
+  box-shadow: 0 0 55px rgba(240, 33, 185, 0.75), 0 0 80px rgba(0, 240, 255, 0.5), inset 0 0 25px rgba(240, 33, 185, 0.2) !important;
+  color: #f021b9 !important;
+  transform: translateY(-2px) scale(1.01) !important;
+  outline: none !important;
+}
+
+.player-card {
+  padding: 0.6rem !important;
+  margin-bottom: 0.6rem !important;
+  border: 2px solid rgba(0, 240, 255, 0.3) !important;
+}
+
+.stat-card {
+  background: rgba(10, 15, 30, 0.9) !important;
+  border: 3px solid !important;
+  padding: 1rem 1.2rem !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4) !important;
+}
+
+.stat-icon {
+  font-size: 2rem !important;
+}
+
+.stat-label {
+  font-size: 0.85rem !important;
+  font-weight: 900 !important;
+}
+
+.stat-value {
+  font-size: 1.8rem !important;
+  font-weight: 900 !important;
+}
+
+.game-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+}
+
+/* Teclat compacte eliminat - es fa servir el teclat gran original */
 </style>
