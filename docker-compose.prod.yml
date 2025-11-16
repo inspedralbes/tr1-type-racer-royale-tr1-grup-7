@@ -1,0 +1,60 @@
+services:
+  db:
+    image: mariadb:10.6
+    container_name: grup7_db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: 'grup7_root_pass'
+      MARIADB_DATABASE: 'grup7'
+      MARIADB_USER: 'grup7_user'
+      MARIADB_PASSWORD: 'grup7_pass'
+    volumes:
+      - ./docker_data/db:/var/lib/mysql
+    networks:
+      - grup7_net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$MARIADB_USER -p$MARIADB_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: grup7_backend
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_USER=grup7_user
+      - DB_PASSWORD=grup7_pass
+      - DB_NAME=grup7
+      - PORT=8080
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - grup7_net
+    # No expose directly; accessed via Nginx proxy
+    # ports:
+    #   - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend/client-joc
+      dockerfile: Dockerfile.prod
+      args:
+        # Leave empty to default same-origin, or set to full URL like http://your-domain
+        - VITE_SOCKET_URL=
+    container_name: grup7_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - grup7_net
+    ports:
+      - "80:80"
+
+networks:
+  grup7_net:
+    driver: bridge

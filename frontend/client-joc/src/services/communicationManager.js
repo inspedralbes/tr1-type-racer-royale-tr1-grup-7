@@ -1,9 +1,28 @@
 import { io } from "socket.io-client";
 
-// Como el código se ejecuta en el NAVEGADOR (no en el contenedor),
-// siempre debemos usar localhost ya que el navegador no puede resolver "backend"
-// El puerto 8080 está mapeado a localhost:8080 por Docker
-const SOCKET_URL = "http://localhost:8080";
+// Determina dinàmicament l'URL del servidor de Socket.IO per suportar producció i dev.
+// Prioritza:
+// 1) window.__SOCKET_URL__ injectat (si existeix)
+// 2) import.meta.env.VITE_SOCKET_URL (en temps de build amb Vite)
+// 3) El mateix origen (ideal darrere d'un proxy Nginx que redirigeixi /socket.io cap al backend)
+function resolveSocketUrl() {
+  try {
+    if (typeof window !== "undefined") {
+      const injected = window.__SOCKET_URL__;
+      if (injected && typeof injected === "string") return injected;
+      const viteEnv = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SOCKET_URL;
+      if (viteEnv && typeof viteEnv === "string") return viteEnv;
+      // Per defecte, mateix origen
+      return `${window.location.protocol}//${window.location.host}`;
+    }
+  } catch (e) {
+    // fallback silenciós
+  }
+  // Fallback final (dev local clàssic)
+  return "http://localhost:8080";
+}
+
+const SOCKET_URL = resolveSocketUrl();
 console.log("🔌 Socket.IO conectando a:", SOCKET_URL);
 const socket = io(SOCKET_URL, { autoConnect: false });
 

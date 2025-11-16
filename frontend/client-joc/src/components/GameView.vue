@@ -2126,7 +2126,7 @@ const autoScrollToCurrentChar = () => {
   color: #f021b9 !important;
   transform: translateY(-2px) scale(1.01) !important;
   outline: none !important;
-}
+} 
 
 .player-card {
   padding: 0.6rem !important;
