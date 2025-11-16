@@ -1,0 +1,23 @@
+# Archivo .gitignore
+
+# Datos de la BBDD local
+/docker_data/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Dependencias (si usas composer o npm)
+/vendor/
+# Ignora node_modules en cualquier subcarpeta
+node_modules/
+
+# Build de Vite
+frontend/client-joc/dist/
+
+# Archivos de entorno
+.env
+.env.local
+
+# Ignorar repo externo importado
+Juego-teclado/
